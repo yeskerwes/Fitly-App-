@@ -10,9 +10,7 @@ import UIKit
 final class ChallengeDetailViewCell: UIView {
 
     // MARK: - Callbacks
-    /// Called when user taps Start button
     var onStartTapped: (() -> Void)?
-    /// Called when user taps Back (if used)
     var onBackTapped: (() -> Void)?
 
     // MARK: - Font helper (Poppins with fallback)
