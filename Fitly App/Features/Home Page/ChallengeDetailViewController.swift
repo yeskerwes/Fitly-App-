@@ -1,11 +1,3 @@
-//
-//  ChallengeDetailViewController.swift
-//  Fitly
-//
-//  Created by you on your project.
-//  Contains logic, Core Data reads/writes and passes data to ChallengeDetailViewCell UI.
-//
-
 import UIKit
 import CoreData
 
@@ -86,18 +78,11 @@ final class ChallengeDetailViewController: UIViewController {
 
     // MARK: - Start flow (logic)
     private func startAction() {
-        // Default behaviour: increment doneToday by 1; if reach daily target, mark day completed.
-        let quantityPerDay = Int(entity.quantityPerDay)
-        if quantityPerDay > 0 {
-            incrementDoneToday(by: 1)
-            let newDone = intValueSafely(forKey: "doneToday", in: entity) ?? 0
-            if newDone >= quantityPerDay {
-                markTodayCompleted()
-            }
-        } else {
-            // No daily reps — treat as day-based challenge: mark a day as completed
-            markTodayCompleted()
-        }
+        // Present camera VC to count reps using Vision body pose
+        let cam = PushupCameraViewController()
+        cam.modalPresentationStyle = .fullScreen
+        cam.delegate = self
+        present(cam, animated: true, completion: nil)
     }
 
     // MARK: - Core Data helpers (reads/writes)
@@ -145,5 +130,31 @@ final class ChallengeDetailViewController: UIViewController {
         configureFromEntity()
         // notify listeners if needed
         NotificationCenter.default.post(name: .challengeStatusChanged, object: nil, userInfo: ["id": entity.value(forKey: "id") as Any, "status": "updated"])
+    }
+}
+
+// MARK: - PushupCameraDelegate
+extension ChallengeDetailViewController: PushupCameraDelegate {
+    func pushupSessionDidFinish(count: Int) {
+        guard count > 0 else {
+            // nothing to save; you might show a message if you want
+            return
+        }
+
+        // add counted reps to doneToday
+        incrementDoneToday(by: count)
+
+        // If reached or exceeded daily target -> mark day completed
+        let quantityPerDay = Int(entity.quantityPerDay)
+        let newDone = intValueSafely(forKey: "doneToday", in: entity) ?? 0
+        if quantityPerDay > 0 && newDone >= quantityPerDay {
+            markTodayCompleted()
+        }
+
+        // Optionally: save a WorkoutSession entity or other analytics here
+    }
+
+    func pushupSessionDidCancel() {
+        // user cancelled or camera failed — nothing to do
     }
 }
