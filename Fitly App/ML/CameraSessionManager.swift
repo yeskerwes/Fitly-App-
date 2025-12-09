@@ -23,8 +23,7 @@ final class CameraSessionManager: NSObject {
     override init() {
         super.init()
     }
-
-    /// Configure session asynchronously. Completion is signaled via NotificationCenter.
+    
     func configureSession(preferredPosition: AVCaptureDevice.Position = .front,
                           sampleBufferDelegate: AVCaptureVideoDataOutputSampleBufferDelegate?,
                           delegateQueue: DispatchQueue?) {

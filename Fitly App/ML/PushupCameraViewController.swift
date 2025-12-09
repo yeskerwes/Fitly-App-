@@ -5,11 +5,13 @@ import CoreImage
 
 final class PushupCameraViewController: UIViewController {
 
+    // MARK: - Public
     weak var delegate: PushupCameraDelegate?
 
-    // UI
+    // MARK: - UI
     private let previewContainer = UIView()
     private let overlayView = OverlayView()
+
     private let countLabel: UILabel = {
         let l = UILabel()
         l.font = .boldSystemFont(ofSize: 34)
@@ -18,6 +20,7 @@ final class PushupCameraViewController: UIViewController {
         l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
+
     private let doneButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Done", for: .normal)
@@ -28,12 +31,12 @@ final class PushupCameraViewController: UIViewController {
         return b
     }()
 
-    // camera manager + vision
+    // MARK: - Camera / Vision
     private let cameraManager = CameraSessionManager()
     private let videoQueue = DispatchQueue(label: "fitly.camera.queue")
     private let sequenceHandler = VNSequenceRequestHandler()
 
-    // counting
+    // MARK: - Counting logic
     private var repCount: Int = 0 {
         didSet { DispatchQueue.main.async { self.countLabel.text = "\(self.repCount)" } }
     }
@@ -43,11 +46,11 @@ final class PushupCameraViewController: UIViewController {
     private let upThreshold: CGFloat = 150
     private let smoothingAlpha: CGFloat = 0.2
 
-    // debug
+    // MARK: - Debug (kept minimal)
     private var frameCounter = 0
-    private var showDebugCameraFrame = false // set true to render raw camera frames into overlay (expensive)
+    private var debugLogs = false
 
-    // lifecycle
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
@@ -67,15 +70,18 @@ final class PushupCameraViewController: UIViewController {
         cameraManager.stopRunning()
     }
 
+    // MARK: - UI
     private func setupUI() {
         previewContainer.translatesAutoresizingMaskIntoConstraints = false
         previewContainer.clipsToBounds = true
         view.addSubview(previewContainer)
+
+        overlayView.backgroundColor = .clear
+        overlayView.isUserInteractionEnabled = false
+        previewContainer.addSubview(overlayView)
+
         view.addSubview(countLabel)
         view.addSubview(doneButton)
-        previewContainer.addSubview(overlayView)
-        overlayView.isUserInteractionEnabled = false
-        overlayView.backgroundColor = .clear
 
         NSLayoutConstraint.activate([
             previewContainer.topAnchor.constraint(equalTo: view.topAnchor),
@@ -93,12 +99,13 @@ final class PushupCameraViewController: UIViewController {
         ])
 
         doneButton.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
-        let dblTap = UITapGestureRecognizer(target: self, action: #selector(cancelTapped))
-        dblTap.numberOfTapsRequired = 2
-        view.addGestureRecognizer(dblTap)
+
+        let dbl = UITapGestureRecognizer(target: self, action: #selector(cancelTapped))
+        dbl.numberOfTapsRequired = 2
+        view.addGestureRecognizer(dbl)
     }
 
-    // MARK: Permissions and config
+    // MARK: - Camera configuration
     private func checkCameraPermissionAndConfigure() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
@@ -112,17 +119,6 @@ final class PushupCameraViewController: UIViewController {
         default:
             showPermissionAlert()
         }
-    }
-
-    private func showPermissionAlert() {
-        let ac = UIAlertController(title: "Camera Access Required",
-                                   message: "Enable camera access in Settings to count push-ups.",
-                                   preferredStyle: .alert)
-        ac.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-            self.delegate?.pushupSessionDidCancel()
-            self.dismiss(animated: true, completion: nil)
-        })
-        present(ac, animated: true, completion: nil)
     }
 
     private func configureCamera() {
@@ -147,17 +143,11 @@ final class PushupCameraViewController: UIViewController {
             let pl = self.cameraManager.previewLayer
             pl.frame = self.previewContainer.bounds
 
-            if let plConn = pl.connection {
-                if plConn.automaticallyAdjustsVideoMirroring {
-                    plConn.automaticallyAdjustsVideoMirroring = false
-                }
-                if plConn.isVideoOrientationSupported {
-                    plConn.videoOrientation = .portrait
-                }
-                if plConn.isVideoMirroringSupported {
-                    plConn.isVideoMirrored = self.cameraManager.usingFrontCamera
-                }
-            } else if self.cameraManager.usingFrontCamera {
+            if let conn = pl.connection {
+                conn.automaticallyAdjustsVideoMirroring = false
+                conn.videoOrientation = .portrait
+                conn.isVideoMirrored = true
+            } else {
                 pl.setAffineTransform(CGAffineTransform(scaleX: -1, y: 1))
             }
 
@@ -167,69 +157,85 @@ final class PushupCameraViewController: UIViewController {
 
             self.previewContainer.bringSubviewToFront(self.overlayView)
 
-            // Debug: print status before starting
-            self.debugSessionStatus()
+            if self.debugLogs {
+                self.debugSessionStatus()
+            }
 
-            // start running
             self.cameraManager.startRunning()
         }
     }
 
     @objc private func sessionConfigFailed(_ n: Notification) {
-        var msg = "Unknown camera error."
-        if let err = n.object as? Error { msg = err.localizedDescription }
+        var msg = "Unknown camera error"
+        if let e = n.object as? Error { msg = e.localizedDescription }
         presentErrorAndClose(msg)
     }
 
-    private func presentErrorAndClose(_ message: String) {
-        let ac = UIAlertController(title: "Camera error", message: message, preferredStyle: .alert)
+    private func showPermissionAlert() {
+        let ac = UIAlertController(title: "Camera Access Required",
+                                   message: "Enable camera access in Settings.",
+                                   preferredStyle: .alert)
         ac.addAction(UIAlertAction(title: "OK", style: .default) { _ in
             self.delegate?.pushupSessionDidCancel()
-            self.dismiss(animated: true, completion: nil)
+            self.dismiss(animated: true)
         })
-        present(ac, animated: true, completion: nil)
+        present(ac, animated: true)
     }
 
-    // MARK: Actions
-    @objc private func doneTapped() {
-        // Предотвращаем двойные нажатия
-        doneButton.isEnabled = false
+    private func presentErrorAndClose(_ message: String) {
+        let ac = UIAlertController(title: "Camera Error", message: message, preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "Close", style: .default) { _ in
+            self.delegate?.pushupSessionDidCancel()
+            self.dismiss(animated: true)
+        })
+        present(ac, animated: true)
+    }
 
-        // Останавливаем камеру
+    // MARK: - Actions
+    @objc private func doneTapped() {
+        doneButton.isEnabled = false
         cameraManager.stopRunning()
 
-        // Сохраняем запись через CoreDataManager
-        let countToSave = Int(repCount)
-        CoreDataManager.shared.createPushupSession(count: countToSave, date: Date())
+        CoreDataManager.shared.createPushupSession(count: repCount, date: Date())
 
-        // Сообщаем делегату и закрываем экран на main
         DispatchQueue.main.async {
             self.delegate?.pushupSessionDidFinish(count: self.repCount)
-            self.dismiss(animated: true, completion: nil)
+            self.dismiss(animated: true)
         }
     }
 
     @objc private func cancelTapped() {
         cameraManager.stopRunning()
         delegate?.pushupSessionDidCancel()
-        dismiss(animated: true, completion: nil)
+        dismiss(animated: true)
     }
 
-    // MARK: Pose handling
+    // MARK: - Vision orientation helper
+    private func currentCGImagePropertyOrientation() -> CGImagePropertyOrientation {
+        return cameraManager.usingFrontCamera ? .leftMirrored : .right
+    }
+
+    // MARK: - Frame processing
     private func processFrame(pixelBuffer: CVPixelBuffer) {
-        let request = VNDetectHumanBodyPoseRequest()
+        let req = VNDetectHumanBodyPoseRequest()
+        let orientation = currentCGImagePropertyOrientation()
+
         do {
-            try sequenceHandler.perform([request], on: pixelBuffer)
-            guard let observation = request.results?.first else {
-                overlayView.updateImage(nil)
-                return
-            }
-            handlePoseObservation(observation)
+            try sequenceHandler.perform([req], on: pixelBuffer, orientation: orientation)
         } catch {
-            // ignore transient Vision errors
+            if debugLogs { print("Vision perform error:", error) }
+            return
         }
+
+        guard let obs = req.results?.first else {
+            DispatchQueue.main.async { self.overlayView.updateImage(nil) }
+            return
+        }
+
+        handlePoseObservation(obs)
     }
 
+    // MARK: - Pose handling (use capture-device normalized coords)
     private func handlePoseObservation(_ obs: VNHumanBodyPoseObservation) {
         var points: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
         let jointNames: [VNHumanBodyPoseObservation.JointName] = [
@@ -238,9 +244,10 @@ final class PushupCameraViewController: UIViewController {
             .leftWrist, .rightWrist, .leftHip, .rightHip,
             .leftKnee, .rightKnee, .leftAnkle, .rightAnkle
         ]
+
         for name in jointNames {
             if let p = try? obs.recognizedPoint(name), p.confidence >= 0.15 {
-                points[name] = CGPoint(x: p.x, y: 1 - p.y)
+                points[name] = CGPoint(x: p.x, y: p.y)
             }
         }
 
@@ -253,7 +260,7 @@ final class PushupCameraViewController: UIViewController {
         }
 
         guard !angles.isEmpty else {
-            overlayView.updateImage(nil)
+            DispatchQueue.main.async { self.overlayView.updateImage(nil) }
             return
         }
 
@@ -267,24 +274,27 @@ final class PushupCameraViewController: UIViewController {
                 self.repCount += 1
                 self.armWasDown = false
             }
-            let img = self.makeOverlayImage(points: points, repCount: self.repCount, mirrorX: self.cameraManager.usingFrontCamera)
+
+            let img = self.drawSkeleton(points: points, rep: self.repCount)
             self.overlayView.updateImage(img)
         }
     }
 
-    private func makeOverlayImage(points: [VNHumanBodyPoseObservation.JointName: CGPoint], repCount: Int, mirrorX: Bool) -> CGImage? {
+    // MARK: - Draw skeleton (FINAL: flip BOTH axes before projecting)
+    private func drawSkeleton(points: [VNHumanBodyPoseObservation.JointName: CGPoint], rep: Int) -> CGImage? {
         let size = overlayView.bounds.size
         guard size.width > 0 && size.height > 0 else { return nil }
+
         UIGraphicsBeginImageContextWithOptions(size, false, 0)
         guard let ctx = UIGraphicsGetCurrentContext() else { UIGraphicsEndImageContext(); return nil }
 
-        ctx.setLineWidth(2)
+        ctx.setLineWidth(3)
         ctx.setStrokeColor(UIColor.systemGreen.cgColor)
         ctx.setFillColor(UIColor.systemGreen.cgColor)
 
-        func toView(_ p: CGPoint) -> CGPoint {
-            let normalizedX = mirrorX ? (1 - p.x) : p.x
-            return CGPoint(x: normalizedX * size.width, y: p.y * size.height)
+        func mapPoint(_ p: CGPoint) -> CGPoint {
+            let flipped = CGPoint(x: 1 - p.x, y: 1 - p.y)
+            return cameraManager.previewLayer.layerPointConverted(fromCaptureDevicePoint: flipped)
         }
 
         let connections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] = [
@@ -301,30 +311,32 @@ final class PushupCameraViewController: UIViewController {
 
         for (a, b) in connections {
             if let pa = points[a], let pb = points[b] {
-                ctx.move(to: toView(pa)); ctx.addLine(to: toView(pb)); ctx.strokePath()
+                ctx.move(to: mapPoint(pa))
+                ctx.addLine(to: mapPoint(pb))
+                ctx.strokePath()
             }
         }
 
         for (_, p) in points {
-            let v = toView(p)
+            let v = mapPoint(p)
             let r: CGFloat = 6
             ctx.addEllipse(in: CGRect(x: v.x - r/2, y: v.y - r/2, width: r, height: r))
             ctx.drawPath(using: .fill)
         }
 
-        let text = "Reps: \(repCount)"
+        let text = "Reps: \(rep)"
         let attrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.boldSystemFont(ofSize: 14),
+            .font: UIFont.boldSystemFont(ofSize: 20),
             .foregroundColor: UIColor.white
         ]
-        text.draw(at: CGPoint(x: 8, y: 8), withAttributes: attrs)
+        (text as NSString).draw(at: CGPoint(x: 10, y: 10), withAttributes: attrs)
 
-        let uiImage = UIGraphicsGetImageFromCurrentImageContext()
+        let img = UIGraphicsGetImageFromCurrentImageContext()?.cgImage
         UIGraphicsEndImageContext()
-        return uiImage?.cgImage
+        return img
     }
 
-    // MARK: - Math
+    // MARK: - Math helper
     private func angleBetween(a: CGPoint, b: CGPoint, c: CGPoint) -> CGFloat {
         let v1 = CGVector(dx: a.x - b.x, dy: a.y - b.y)
         let v2 = CGVector(dx: c.x - b.x, dy: c.y - b.y)
@@ -332,39 +344,10 @@ final class PushupCameraViewController: UIViewController {
         let m1 = hypot(v1.dx, v1.dy)
         let m2 = hypot(v2.dx, v2.dy)
         guard m1 > 1e-4 && m2 > 1e-4 else { return 180 }
-        let cosA = max(-1, min(1, dot / (m1 * m2)))
-        return acos(cosA) * 180 / .pi
+        return acos(max(-1, min(1, dot / (m1 * m2)))) * 180 / .pi
     }
-}
 
-// MARK: AVCaptureVideoDataOutputSampleBufferDelegate
-extension PushupCameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
-    func captureOutput(_ output: AVCaptureOutput,
-                       didOutput sampleBuffer: CMSampleBuffer,
-                       from connection: AVCaptureConnection) {
-        frameCounter += 1
-        if frameCounter % 60 == 0 {
-            print("Frames received:", frameCounter)
-        }
-
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-
-        if showDebugCameraFrame {
-            // Draw raw camera frame to overlay for debug (expensive)
-            let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-            let context = CIContext(options: nil)
-            if let cg = context.createCGImage(ciImage, from: ciImage.extent) {
-                DispatchQueue.main.async {
-                    self.overlayView.updateImage(cg)
-                }
-            }
-        }
-
-        processFrame(pixelBuffer: pixelBuffer)
-    }
-    
-    
-    // ----------------- Добавь внутрь PushupCameraViewController -----------------
+    // MARK: - Debug helper
     private func debugSessionStatus() {
         print("=== Camera debug ===")
         let session = cameraManager.captureSession
@@ -375,9 +358,6 @@ extension PushupCameraViewController: AVCaptureVideoDataOutputSampleBufferDelega
             if let devInput = input as? AVCaptureDeviceInput {
                 print("  device position:", devInput.device.position.rawValue)
                 print("  localizedName:", devInput.device.localizedName)
-                // activeFormat may be useful (optional)
-                let fmt = devInput.device.activeFormat
-                print("  active format videoSupportedFrameRateRanges:", fmt.videoSupportedFrameRateRanges)
             }
         }
         print("outputs count:", session.outputs.count)
@@ -400,9 +380,21 @@ extension PushupCameraViewController: AVCaptureVideoDataOutputSampleBufferDelega
         print("previewLayer superlayer:", pl.superlayer != nil ? "yes" : "no")
         print("previewLayer frame:", pl.frame)
         print("previewContainer bounds:", previewContainer.bounds)
-        print("overlayView frame:", overlayView.frame)
         print("====================")
     }
-    // ---------------------------------------------------------------------------
+}
 
+// MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
+extension PushupCameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
+    func captureOutput(_ output: AVCaptureOutput,
+                       didOutput sampleBuffer: CMSampleBuffer,
+                       from connection: AVCaptureConnection) {
+        frameCounter += 1
+        if frameCounter % 60 == 0 && debugLogs {
+            print("Frames received:", frameCounter)
+        }
+
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        processFrame(pixelBuffer: pixelBuffer)
+    }
 }
