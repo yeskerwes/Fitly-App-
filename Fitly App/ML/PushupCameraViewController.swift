@@ -1,3 +1,11 @@
+//
+// PushupCameraViewController.swift
+// Fitly App
+//
+// Updated: bigger visible joints, temporal smoothing & fallback,
+// relaxed elbow thresholds so reps are easier to register.
+//
+
 import UIKit
 import AVFoundation
 import Vision
@@ -40,13 +48,22 @@ final class PushupCameraViewController: UIViewController {
     private var repCount: Int = 0 {
         didSet { DispatchQueue.main.async { self.countLabel.text = "\(self.repCount)" } }
     }
+
+    // NOTE: adjusted thresholds — easier to register
     private var smoothedAngle: CGFloat = 170
     private var armWasDown = false
-    private let downThreshold: CGFloat = 80
-    private let upThreshold: CGFloat = 150
-    private let smoothingAlpha: CGFloat = 0.2
+    private var downThreshold: CGFloat = 110 // was 80 -> now easier (trigger when angle below 110)
+    private var upThreshold: CGFloat = 140   // was 150 -> now easier to reach up
+    private var angleSmoothingAlpha: CGFloat = 0.25
 
-    // MARK: - Debug (kept minimal)
+    // MARK: - Point smoothing & visibility
+    // Keep last known capture-space positions and confidences for temporal smoothing/fallback
+    private var lastKnownPoints: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
+    private var lastKnownConfidences: [VNHumanBodyPoseObservation.JointName: CGFloat] = [:]
+    private let positionSmoothingAlpha: CGFloat = 0.35 // higher = faster adapt, lower = smoother
+    private let minVisibleConfidence: CGFloat = 0.05 // even low-confidence points will be shown via smoothing
+
+    // MARK: - Debug
     private var frameCounter = 0
     private var debugLogs = false
 
@@ -157,9 +174,7 @@ final class PushupCameraViewController: UIViewController {
 
             self.previewContainer.bringSubviewToFront(self.overlayView)
 
-            if self.debugLogs {
-                self.debugSessionStatus()
-            }
+            if self.debugLogs { self.debugSessionStatus() }
 
             self.cameraManager.startRunning()
         }
@@ -235,9 +250,10 @@ final class PushupCameraViewController: UIViewController {
         handlePoseObservation(obs)
     }
 
-    // MARK: - Pose handling (use capture-device normalized coords)
+    // MARK: - Pose handling (capture-device normalized coords)
     private func handlePoseObservation(_ obs: VNHumanBodyPoseObservation) {
-        var points: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
+        // recognized points (capture-device normalized)
+        var detected: [VNHumanBodyPoseObservation.JointName: (point: CGPoint, confidence: CGFloat)] = [:]
         let jointNames: [VNHumanBodyPoseObservation.JointName] = [
             .nose, .leftEye, .rightEye, .leftEar, .rightEar,
             .leftShoulder, .rightShoulder, .leftElbow, .rightElbow,
@@ -246,16 +262,47 @@ final class PushupCameraViewController: UIViewController {
         ]
 
         for name in jointNames {
-            if let p = try? obs.recognizedPoint(name), p.confidence >= 0.15 {
-                points[name] = CGPoint(x: p.x, y: p.y)
+            if let p = try? obs.recognizedPoint(name) {
+                detected[name] = (CGPoint(x: p.x, y: p.y), CGFloat(p.confidence))
             }
         }
 
+        // Merge with lastKnownPoints using exponential smoothing / fallback:
+        var mergedPoints: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
+        var mergedConf: [VNHumanBodyPoseObservation.JointName: CGFloat] = [:]
+
+        for name in jointNames {
+            if let det = detected[name] {
+                // new detection available -> smooth with previous position if exists
+                if let last = lastKnownPoints[name] {
+                    let smoothedX = positionSmoothingAlpha * det.point.x + (1 - positionSmoothingAlpha) * last.x
+                    let smoothedY = positionSmoothingAlpha * det.point.y + (1 - positionSmoothingAlpha) * last.y
+                    mergedPoints[name] = CGPoint(x: smoothedX, y: smoothedY)
+                } else {
+                    mergedPoints[name] = det.point
+                }
+                mergedConf[name] = det.confidence
+            } else if let last = lastKnownPoints[name] {
+                // no detection this frame -> reuse previous with decay on confidence
+                mergedPoints[name] = last
+                let lastConf = lastKnownConfidences[name] ?? 0.0
+                // decay confidence so if missing for long time it'll drop
+                mergedConf[name] = max( minVisibleConfidence, lastConf * 0.85 )
+            } else {
+                // nothing at all -> skip
+            }
+        }
+
+        // Save merged into lastKnown for next frame
+        lastKnownPoints = mergedPoints
+        lastKnownConfidences = mergedConf
+
+        // Compute elbow angles using merged (smoothed) capture-device points (no flips here)
         var angles: [CGFloat] = []
-        if let s = points[.leftShoulder], let e = points[.leftElbow], let w = points[.leftWrist] {
+        if let s = mergedPoints[.leftShoulder], let e = mergedPoints[.leftElbow], let w = mergedPoints[.leftWrist] {
             angles.append(angleBetween(a: s, b: e, c: w))
         }
-        if let s = points[.rightShoulder], let e = points[.rightElbow], let w = points[.rightWrist] {
+        if let s = mergedPoints[.rightShoulder], let e = mergedPoints[.rightElbow], let w = mergedPoints[.rightWrist] {
             angles.append(angleBetween(a: s, b: e, c: w))
         }
 
@@ -265,9 +312,10 @@ final class PushupCameraViewController: UIViewController {
         }
 
         let chosen = angles.reduce(0, +) / CGFloat(angles.count)
-        smoothedAngle = smoothingAlpha * chosen + (1 - smoothingAlpha) * smoothedAngle
+        smoothedAngle = angleSmoothingAlpha * chosen + (1 - angleSmoothingAlpha) * smoothedAngle
 
         DispatchQueue.main.async {
+            // FSM for reps with relaxed thresholds (set above)
             if self.smoothedAngle < self.downThreshold {
                 self.armWasDown = true
             } else if self.armWasDown && self.smoothedAngle > self.upThreshold {
@@ -275,13 +323,19 @@ final class PushupCameraViewController: UIViewController {
                 self.armWasDown = false
             }
 
-            let img = self.drawSkeleton(points: points, rep: self.repCount)
+            // Draw overlay using mergedPoints (capture-device coords)
+            let img = self.drawSkeleton(points: mergedPoints, confidences: mergedConf, rep: self.repCount)
             self.overlayView.updateImage(img)
         }
     }
 
-    // MARK: - Draw skeleton (FINAL: flip BOTH axes before projecting)
-    private func drawSkeleton(points: [VNHumanBodyPoseObservation.JointName: CGPoint], rep: Int) -> CGImage? {
+    // MARK: - Draw skeleton (flip both then convert)
+    // Points are capture-device normalized (0..1). Before projecting we flip both axes (1-x,1-y)
+    // and convert using previewLayer.layerPointConverted(fromCaptureDevicePoint:).
+    // Joints are drawn with size+outline dependent on merged confidence.
+    private func drawSkeleton(points: [VNHumanBodyPoseObservation.JointName: CGPoint],
+                              confidences: [VNHumanBodyPoseObservation.JointName: CGFloat],
+                              rep: Int) -> CGImage? {
         let size = overlayView.bounds.size
         guard size.width > 0 && size.height > 0 else { return nil }
 
@@ -292,7 +346,8 @@ final class PushupCameraViewController: UIViewController {
         ctx.setStrokeColor(UIColor.systemGreen.cgColor)
         ctx.setFillColor(UIColor.systemGreen.cgColor)
 
-        func mapPoint(_ p: CGPoint) -> CGPoint {
+        func mapPointFlipped(_ p: CGPoint) -> CGPoint {
+            // final chosen mapping (flip both) — tested to match preview
             let flipped = CGPoint(x: 1 - p.x, y: 1 - p.y)
             return cameraManager.previewLayer.layerPointConverted(fromCaptureDevicePoint: flipped)
         }
@@ -309,21 +364,55 @@ final class PushupCameraViewController: UIViewController {
             (.rightHip, .rightKnee), (.rightKnee, .rightAnkle)
         ]
 
+        // Draw bones (lines) first (semi-transparent)
+        ctx.setLineWidth(3)
+        ctx.setStrokeColor(UIColor(white: 1.0, alpha: 0.9).cgColor)
         for (a, b) in connections {
             if let pa = points[a], let pb = points[b] {
-                ctx.move(to: mapPoint(pa))
-                ctx.addLine(to: mapPoint(pb))
-                ctx.strokePath()
+                let va = mapPointFlipped(pa)
+                let vb = mapPointFlipped(pb)
+                ctx.move(to: va); ctx.addLine(to: vb); ctx.strokePath()
             }
         }
 
-        for (_, p) in points {
-            let v = mapPoint(p)
-            let r: CGFloat = 6
-            ctx.addEllipse(in: CGRect(x: v.x - r/2, y: v.y - r/2, width: r, height: r))
+        // Draw joints with outline + fill + shadow
+        for (joint, p) in points {
+            let conf = confidences[joint] ?? minVisibleConfidence
+            // size mapping: between 6..16 px depending on confidence
+            let minR: CGFloat = 6
+            let maxR: CGFloat = 16
+            let radius = minR + (maxR - minR) * CGFloat(min(1.0, max(0.0, conf))) // clamp 0..1
+
+            let v = mapPointFlipped(p)
+
+            // shadow / glow
+            ctx.saveGState()
+            ctx.setShadow(offset: .zero, blur: 6, color: UIColor.black.withAlphaComponent(0.6).cgColor)
+
+            // fill color: green with alpha depending on conf
+            let fillColor = UIColor.systemGreen.withAlphaComponent(0.95).cgColor
+            ctx.setFillColor(fillColor)
+            ctx.addEllipse(in: CGRect(x: v.x - radius/2, y: v.y - radius/2, width: radius, height: radius))
             ctx.drawPath(using: .fill)
+
+            ctx.restoreGState()
+
+            // outline (white) for better contrast
+            ctx.setLineWidth(2)
+            ctx.setStrokeColor(UIColor.white.cgColor)
+            ctx.addEllipse(in: CGRect(x: v.x - radius/2, y: v.y - radius/2, width: radius, height: radius))
+            ctx.strokePath()
+
+            // if confidence is low, draw small inner circle (darker) to indicate uncertainty
+            if conf < 0.2 {
+                ctx.setFillColor(UIColor.systemYellow.withAlphaComponent(0.9).cgColor)
+                let innerR = radius * 0.5
+                ctx.addEllipse(in: CGRect(x: v.x - innerR/2, y: v.y - innerR/2, width: innerR, height: innerR))
+                ctx.drawPath(using: .fill)
+            }
         }
 
+        // draw rep count
         let text = "Reps: \(rep)"
         let attrs: [NSAttributedString.Key: Any] = [
             .font: UIFont.boldSystemFont(ofSize: 20),
@@ -338,13 +427,15 @@ final class PushupCameraViewController: UIViewController {
 
     // MARK: - Math helper
     private func angleBetween(a: CGPoint, b: CGPoint, c: CGPoint) -> CGFloat {
+        // Input points are capture-device normalized coordinates (0..1) — vector math is invariant to scale.
         let v1 = CGVector(dx: a.x - b.x, dy: a.y - b.y)
         let v2 = CGVector(dx: c.x - b.x, dy: c.y - b.y)
         let dot = v1.dx * v2.dx + v1.dy * v2.dy
         let m1 = hypot(v1.dx, v1.dy)
         let m2 = hypot(v2.dx, v2.dy)
         guard m1 > 1e-4 && m2 > 1e-4 else { return 180 }
-        return acos(max(-1, min(1, dot / (m1 * m2)))) * 180 / .pi
+        let cosA = max(-1, min(1, dot / (m1 * m2)))
+        return acos(cosA) * 180 / .pi
     }
 
     // MARK: - Debug helper
@@ -390,10 +481,6 @@ extension PushupCameraViewController: AVCaptureVideoDataOutputSampleBufferDelega
                        didOutput sampleBuffer: CMSampleBuffer,
                        from connection: AVCaptureConnection) {
         frameCounter += 1
-        if frameCounter % 60 == 0 && debugLogs {
-            print("Frames received:", frameCounter)
-        }
-
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         processFrame(pixelBuffer: pixelBuffer)
     }
