@@ -1,5 +1,6 @@
 import UIKit
 import CoreData
+import SnapKit
 
 // Notification name used to inform History to reload
 extension Notification.Name {
@@ -21,7 +22,6 @@ class MainViewController: UIViewController {
         l.text = "Welcome back,"
         l.font = UIFont.systemFont(ofSize: 16)
         l.textColor = .gray
-        l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
@@ -29,7 +29,6 @@ class MainViewController: UIViewController {
         let l = UILabel()
         l.text = "there!"
         l.font = UIFont.boldSystemFont(ofSize: 18)
-        l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
@@ -42,7 +41,6 @@ class MainViewController: UIViewController {
         iv.backgroundColor = .white
         iv.layer.borderWidth = 2
         iv.layer.borderColor = UIColor.systemBackground.cgColor
-        iv.translatesAutoresizingMaskIntoConstraints = false
         return iv
     }()
 
@@ -51,7 +49,6 @@ class MainViewController: UIViewController {
         l.text = "Your bets"
         l.font = UIFont.systemFont(ofSize: 14)
         l.textColor = .lightGray
-        l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
@@ -61,7 +58,6 @@ class MainViewController: UIViewController {
         l.text = "You don’t have bet yet"
         l.font = UIFont.systemFont(ofSize: 32, weight: .medium)
         l.numberOfLines = 0
-        l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
@@ -77,7 +73,6 @@ class MainViewController: UIViewController {
         cv.delegate = self
         cv.alwaysBounceVertical = true
         cv.isHidden = true
-        cv.translatesAutoresizingMaskIntoConstraints = false
         return cv
     }()
 
@@ -87,7 +82,6 @@ class MainViewController: UIViewController {
         b.setTitleColor(.white, for: .normal)
         b.backgroundColor = .app
         b.layer.cornerRadius = 24
-        b.translatesAutoresizingMaskIntoConstraints = false
         return b
     }()
 
@@ -130,46 +124,54 @@ class MainViewController: UIViewController {
 
     // MARK: - Layout
     private func setupLayout() {
+        // add subviews
         [welcomeLabel, usernameLabel, avatarImageView, yourBetsLabel, infoLabel, collectionView, createBetButton].forEach {
             view.addSubview($0)
         }
 
-        let safe = view.safeAreaLayoutGuide
-        NSLayoutConstraint.activate([
-            // welcome + username stacked on the left
-            welcomeLabel.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 20),
-            welcomeLabel.topAnchor.constraint(equalTo: safe.topAnchor, constant: 6),
+        // SnapKit constraints
+        welcomeLabel.snp.makeConstraints { make in
+            make.leading.equalTo(view.safeAreaLayoutGuide.snp.leading).offset(20)
+            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(6)
+        }
 
-            usernameLabel.leadingAnchor.constraint(equalTo: welcomeLabel.leadingAnchor),
-            usernameLabel.topAnchor.constraint(equalTo: welcomeLabel.bottomAnchor, constant: 2),
+        usernameLabel.snp.makeConstraints { make in
+            make.leading.equalTo(welcomeLabel.snp.leading)
+            make.top.equalTo(welcomeLabel.snp.bottom).offset(2)
+        }
 
-            // avatar on the right aligned with welcome
-            avatarImageView.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -20),
-            avatarImageView.centerYAnchor.constraint(equalTo: welcomeLabel.centerYAnchor, constant: 8),
-            avatarImageView.widthAnchor.constraint(equalToConstant: 44),
-            avatarImageView.heightAnchor.constraint(equalToConstant: 44),
+        avatarImageView.snp.makeConstraints { make in
+            make.trailing.equalTo(view.safeAreaLayoutGuide.snp.trailing).offset(-20)
+            make.centerY.equalTo(welcomeLabel.snp.centerY).offset(8)
+            make.width.height.equalTo(44)
+        }
 
-            // yourBets label below username
-            yourBetsLabel.leadingAnchor.constraint(equalTo: welcomeLabel.leadingAnchor),
-            yourBetsLabel.topAnchor.constraint(equalTo: usernameLabel.bottomAnchor, constant: 8),
+        yourBetsLabel.snp.makeConstraints { make in
+            make.leading.equalTo(welcomeLabel.snp.leading)
+            make.top.equalTo(usernameLabel.snp.bottom).offset(8)
+        }
 
-            // infoLabel (empty state)
-            infoLabel.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 20),
-            infoLabel.topAnchor.constraint(equalTo: yourBetsLabel.bottomAnchor, constant: 12),
-            infoLabel.trailingAnchor.constraint(lessThanOrEqualTo: safe.trailingAnchor, constant: -20),
+        infoLabel.snp.makeConstraints { make in
+            make.leading.equalTo(view.safeAreaLayoutGuide.snp.leading).offset(20)
+            make.top.equalTo(yourBetsLabel.snp.bottom).offset(12)
+            make.trailing.lessThanOrEqualTo(view.safeAreaLayoutGuide.snp.trailing).offset(-20)
+        }
 
-            // collectionView pinned under yourBetsLabel
-            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.topAnchor.constraint(equalTo: yourBetsLabel.bottomAnchor, constant: 8),
-            collectionView.bottomAnchor.constraint(equalTo: safe.bottomAnchor),
+        collectionView.snp.makeConstraints { make in
+            make.leading.trailing.equalToSuperview()
+            make.top.equalTo(yourBetsLabel.snp.bottom).offset(8)
+            make.bottom.equalTo(view.safeAreaLayoutGuide.snp.bottom)
+        }
 
-            // create button
-            createBetButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            createBetButton.bottomAnchor.constraint(equalTo: safe.bottomAnchor, constant: -18),
-            createBetButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.75),
-            createBetButton.heightAnchor.constraint(equalToConstant: 55)
-        ])
+        createBetButton.snp.makeConstraints { make in
+            make.centerX.equalToSuperview()
+            make.bottom.equalTo(view.safeAreaLayoutGuide.snp.bottom).offset(-18)
+            make.width.equalToSuperview().multipliedBy(0.75)
+            make.height.equalTo(55)
+        }
+
+        // ensure create button stays above collection content
+        view.bringSubviewToFront(createBetButton)
     }
 
     // MARK: - Actions
@@ -331,8 +333,6 @@ extension MainViewController: UICollectionViewDataSource, UICollectionViewDelega
         let vc = ChallengeDetailViewController(entity: selectedEntity)
         navigationController?.pushViewController(vc, animated: true)
     }
-
-
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         itemsEntities.count
