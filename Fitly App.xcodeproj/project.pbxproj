@@ -6,6 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXCopyFilesBuildPhase section */
+		005BAAF62EEB312500117A1A /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		006D258B2ED4D2E100BD12CC /* Fitly App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Fitly App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -68,6 +81,7 @@
 				006D25872ED4D2E100BD12CC /* Sources */,
 				006D25882ED4D2E100BD12CC /* Frameworks */,
 				006D25892ED4D2E100BD12CC /* Resources */,
+				005BAAF62EEB312500117A1A /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -107,6 +121,8 @@
 			);
 			mainGroup = 006D25822ED4D2E100BD12CC;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 006D258C2ED4D2E100BD12CC /* Products */;
 			projectDirPath = "";

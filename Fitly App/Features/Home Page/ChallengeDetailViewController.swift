@@ -78,10 +78,19 @@ final class ChallengeDetailViewController: UIViewController {
 
     // MARK: - Start flow (logic)
     private func startAction() {
-        // Present camera VC to count reps using Vision body pose
+        // Prevent starting if already completed (status completed)
+        if let s = entity.status, s == "completed" {
+            // optionally show info alert
+            let ac = UIAlertController(title: "Completed", message: "This challenge is already finished.", preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "OK", style: .default))
+            present(ac, animated: true)
+            return
+        }
+
         let cam = PushupCameraViewController()
         cam.modalPresentationStyle = .fullScreen
         cam.delegate = self
+        cam.dailyTarget = Int(entity.quantityPerDay) // pass daily target
         present(cam, animated: true, completion: nil)
     }
 
@@ -114,8 +123,24 @@ final class ChallengeDetailViewController: UIViewController {
 
     private func markTodayCompleted() {
         let curCompleted = intValueSafely(forKey: "completedDays", in: entity) ?? 0
-        setIntValue(curCompleted + 1, forKey: "completedDays", on: entity)
+        let newCompleted = curCompleted + 1
+        setIntValue(newCompleted, forKey: "completedDays", on: entity)
         setIntValue(0, forKey: "doneToday", on: entity)
+
+        // If we've reached total days, mark the challenge as fully completed
+        let totalDays = Int(entity.days)
+        if totalDays > 0 && newCompleted >= totalDays {
+            entity.status = "completed"
+
+            // Save completion time: use attribute "completedAt" if present, else overwrite createdAt
+            if entity.entity.attributesByName.keys.contains("completedAt") {
+                entity.setValue(Date(), forKey: "completedAt")
+            } else {
+                // fallback: overwrite createdAt so history will show closing time
+                entity.setValue(Date(), forKey: "createdAt")
+            }
+        }
+
         saveAndRefreshUI()
     }
 
@@ -128,8 +153,8 @@ final class ChallengeDetailViewController: UIViewController {
         }
         // update UI
         configureFromEntity()
-        // notify listeners if needed
-        NotificationCenter.default.post(name: .challengeStatusChanged, object: nil, userInfo: ["id": entity.value(forKey: "id") as Any, "status": "updated"])
+        // notify listeners with actual status (so Main/History update)
+        NotificationCenter.default.post(name: .challengeStatusChanged, object: nil, userInfo: ["id": entity.value(forKey: "id") as Any, "status": entity.status ?? "updated"])
     }
 }
 
@@ -150,11 +175,9 @@ extension ChallengeDetailViewController: PushupCameraDelegate {
         if quantityPerDay > 0 && newDone >= quantityPerDay {
             markTodayCompleted()
         }
-
-        // Optionally: save a WorkoutSession entity or other analytics here
     }
 
     func pushupSessionDidCancel() {
-        // user cancelled or camera failed — nothing to do
+        // nothing special
     }
 }

@@ -2,8 +2,7 @@
 // PushupCameraViewController.swift
 // Fitly App
 //
-// Updated: bigger visible joints, temporal smoothing & fallback,
-// relaxed elbow thresholds so reps are easier to register.
+// Modified: show congratulations alert when daily target reached
 //
 
 import UIKit
@@ -16,10 +15,14 @@ final class PushupCameraViewController: UIViewController {
     // MARK: - Public
     weak var delegate: PushupCameraDelegate?
 
+    /// Daily target (reps per day) passed from ChallengeDetailViewController
+    var dailyTarget: Int?
+
     // MARK: - UI
     private let previewContainer = UIView()
     private let overlayView = OverlayView()
 
+    // small legacy label (kept for backward compatibility)
     private let countLabel: UILabel = {
         let l = UILabel()
         l.font = .boldSystemFont(ofSize: 34)
@@ -29,14 +32,87 @@ final class PushupCameraViewController: UIViewController {
         return l
     }()
 
-    private let doneButton: UIButton = {
+    // New UI pieces to match screenshot
+    private let titleLabel: UILabel = {
+        let l = UILabel()
+        l.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+        l.textColor = .white
+        l.text = "Push Up"
+        l.textAlignment = .center
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
+    private let bigCountLabel: UILabel = {
+        let l = UILabel()
+        l.font = UIFont.boldSystemFont(ofSize: 120)
+        l.textColor = .white
+        l.text = "0"
+        l.translatesAutoresizingMaskIntoConstraints = false
+        l.adjustsFontSizeToFitWidth = true
+        l.minimumScaleFactor = 0.4
+        l.textAlignment = .right
+        return l
+    }()
+
+    private let fractionLabel: UILabel = {
+        let l = UILabel()
+        l.font = UIFont.systemFont(ofSize: 28, weight: .semibold)
+        l.textColor = UIColor(white: 1, alpha: 0.8)
+        l.text = "/0"
+        l.translatesAutoresizingMaskIntoConstraints = false
+        l.textAlignment = .left
+        return l
+    }()
+
+    private let smallProgressBar: UIView = {
+        let v = UIView()
+        v.backgroundColor = UIColor(white: 1, alpha: 0.15)
+        v.layer.cornerRadius = 2
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
+
+    private let smallProgressFill: UIView = {
+        let v = UIView()
+        v.backgroundColor = .systemGreen
+        v.layer.cornerRadius = 2
+        v.translatesAutoresizingMaskIntoConstraints = false
+        return v
+    }()
+
+    private var smallProgressFillWidthConstraint: NSLayoutConstraint?
+
+    private let infoButton: UIButton = {
         let b = UIButton(type: .system)
-        b.setTitle("Done", for: .normal)
-        b.setTitleColor(.white, for: .normal)
-        b.backgroundColor = UIColor.systemBlue
-        b.layer.cornerRadius = 10
+        b.setImage(UIImage(systemName: "info"), for: .normal)
+        b.tintColor = .black
+        b.backgroundColor = .systemGreen
+        b.layer.cornerRadius = 28
         b.translatesAutoresizingMaskIntoConstraints = false
         return b
+    }()
+
+    private let endSessionButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setTitle("END SESSION", for: .normal)
+        b.setTitleColor(.white, for: .normal)
+        b.backgroundColor = .systemGreen
+        b.layer.cornerRadius = 28
+        b.titleLabel?.font = UIFont.systemFont(ofSize: 20, weight: .semibold)
+        b.translatesAutoresizingMaskIntoConstraints = false
+        return b
+    }()
+
+    private let cameraWarningLabel: UILabel = {
+        let l = UILabel()
+        l.text = "Camera can make mistakes.\nWe recommend checking the camera position."
+        l.numberOfLines = 2
+        l.font = UIFont.systemFont(ofSize: 13)
+        l.textColor = .white
+        l.textAlignment = .center
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
     }()
 
     // MARK: - Camera / Vision
@@ -46,22 +122,31 @@ final class PushupCameraViewController: UIViewController {
 
     // MARK: - Counting logic
     private var repCount: Int = 0 {
-        didSet { DispatchQueue.main.async { self.countLabel.text = "\(self.repCount)" } }
+        didSet {
+            DispatchQueue.main.async {
+                self.countLabel.text = "\(self.repCount)"
+                self.bigCountLabel.text = "\(self.repCount)"
+                self.updateCounterUI()
+                // When repCount changed we may need to auto-show congrats (handled elsewhere)
+            }
+        }
     }
+
+    // Flag to ensure congrats alert displayed only once per session
+    private var didShowDailyCompleteAlert = false
 
     // NOTE: adjusted thresholds — easier to register
     private var smoothedAngle: CGFloat = 170
     private var armWasDown = false
-    private var downThreshold: CGFloat = 110 // was 80 -> now easier (trigger when angle below 110)
-    private var upThreshold: CGFloat = 140   // was 150 -> now easier to reach up
+    private var downThreshold: CGFloat = 110
+    private var upThreshold: CGFloat = 140
     private var angleSmoothingAlpha: CGFloat = 0.25
 
     // MARK: - Point smoothing & visibility
-    // Keep last known capture-space positions and confidences for temporal smoothing/fallback
     private var lastKnownPoints: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
     private var lastKnownConfidences: [VNHumanBodyPoseObservation.JointName: CGFloat] = [:]
-    private let positionSmoothingAlpha: CGFloat = 0.35 // higher = faster adapt, lower = smoother
-    private let minVisibleConfidence: CGFloat = 0.05 // even low-confidence points will be shown via smoothing
+    private let positionSmoothingAlpha: CGFloat = 0.35
+    private let minVisibleConfidence: CGFloat = 0.05
 
     // MARK: - Debug
     private var frameCounter = 0
@@ -80,6 +165,9 @@ final class PushupCameraViewController: UIViewController {
         super.viewDidLayoutSubviews()
         cameraManager.previewLayer.frame = previewContainer.bounds
         overlayView.frame = previewContainer.bounds
+
+        // update progress fill width constraint if needed (layout pass)
+        updateCounterUI()
     }
 
     deinit {
@@ -97,29 +185,106 @@ final class PushupCameraViewController: UIViewController {
         overlayView.isUserInteractionEnabled = false
         previewContainer.addSubview(overlayView)
 
-        view.addSubview(countLabel)
-        view.addSubview(doneButton)
+        // add top title + counters
+        view.addSubview(titleLabel)
+        view.addSubview(bigCountLabel)
+        view.addSubview(fractionLabel)
+        view.addSubview(smallProgressBar)
+        smallProgressBar.addSubview(smallProgressFill)
 
+        // small legacy count label (in case other code uses it)
+        view.addSubview(countLabel)
+
+        // bottom controls
+        view.addSubview(endSessionButton)
+        view.addSubview(infoButton)
+        view.addSubview(cameraWarningLabel)
+
+        // constraints
         NSLayoutConstraint.activate([
             previewContainer.topAnchor.constraint(equalTo: view.topAnchor),
             previewContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             previewContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             previewContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            countLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            overlayView.topAnchor.constraint(equalTo: previewContainer.topAnchor),
+            overlayView.leadingAnchor.constraint(equalTo: previewContainer.leadingAnchor),
+            overlayView.trailingAnchor.constraint(equalTo: previewContainer.trailingAnchor),
+            overlayView.bottomAnchor.constraint(equalTo: previewContainer.bottomAnchor),
+
+            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+
+            bigCountLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
+            bigCountLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -10),
+            bigCountLabel.heightAnchor.constraint(equalToConstant: 140),
+            bigCountLabel.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.8),
+
+            fractionLabel.leadingAnchor.constraint(equalTo: bigCountLabel.trailingAnchor, constant: 6),
+            fractionLabel.bottomAnchor.constraint(equalTo: bigCountLabel.bottomAnchor, constant: -28),
+
+            smallProgressBar.topAnchor.constraint(equalTo: bigCountLabel.bottomAnchor, constant: 6),
+            smallProgressBar.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            smallProgressBar.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.5),
+            smallProgressBar.heightAnchor.constraint(equalToConstant: 4),
+
+            countLabel.topAnchor.constraint(equalTo: smallProgressBar.bottomAnchor, constant: 6),
             countLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
-            doneButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
-            doneButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            doneButton.widthAnchor.constraint(equalToConstant: 120),
-            doneButton.heightAnchor.constraint(equalToConstant: 44)
+            // bottom buttons
+            endSessionButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -40),
+            endSessionButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -40),
+            endSessionButton.heightAnchor.constraint(equalToConstant: 64),
+            endSessionButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.6),
+
+            infoButton.centerYAnchor.constraint(equalTo: endSessionButton.centerYAnchor),
+            infoButton.leadingAnchor.constraint(equalTo: endSessionButton.trailingAnchor, constant: 12),
+            infoButton.widthAnchor.constraint(equalToConstant: 56),
+            infoButton.heightAnchor.constraint(equalToConstant: 56),
+
+            cameraWarningLabel.bottomAnchor.constraint(equalTo: endSessionButton.topAnchor, constant: -12),
+            cameraWarningLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            cameraWarningLabel.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.9)
         ])
 
-        doneButton.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
+        // smallProgressFill width constraint (starts 0)
+        smallProgressFill.leadingAnchor.constraint(equalTo: smallProgressBar.leadingAnchor).isActive = true
+        smallProgressFill.topAnchor.constraint(equalTo: smallProgressBar.topAnchor).isActive = true
+        smallProgressFill.bottomAnchor.constraint(equalTo: smallProgressBar.bottomAnchor).isActive = true
+        smallProgressFillWidthConstraint = smallProgressFill.widthAnchor.constraint(equalToConstant: 0)
+        smallProgressFillWidthConstraint?.isActive = true
+
+        // actions
+        endSessionButton.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
+        infoButton.addTarget(self, action: #selector(infoTapped), for: .touchUpInside)
 
         let dbl = UITapGestureRecognizer(target: self, action: #selector(cancelTapped))
         dbl.numberOfTapsRequired = 2
         view.addGestureRecognizer(dbl)
+    }
+
+    // update progress / fraction
+    private func updateCounterUI() {
+        DispatchQueue.main.async {
+            let total = self.dailyTarget ?? 0
+            self.fractionLabel.text = "/\(total)"
+            // compute fill width
+            let barW = self.smallProgressBar.bounds.width
+            let percent: CGFloat
+            if total <= 0 { percent = 0 }
+            else { percent = CGFloat(min(self.repCount, total)) / CGFloat(total) }
+            let fillW = barW * percent
+            self.smallProgressFillWidthConstraint?.constant = fillW
+            UIView.animate(withDuration: 0.12) {
+                self.smallProgressBar.layoutIfNeeded()
+            }
+        }
+    }
+
+    @objc private func infoTapped() {
+        let ac = UIAlertController(title: "Info", message: "Camera can make mistakes. Keep full body visible.", preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default))
+        present(ac, animated: true)
     }
 
     // MARK: - Camera configuration
@@ -208,7 +373,7 @@ final class PushupCameraViewController: UIViewController {
 
     // MARK: - Actions
     @objc private func doneTapped() {
-        doneButton.isEnabled = false
+        endSessionButton.isEnabled = false
         cameraManager.stopRunning()
 
         CoreDataManager.shared.createPushupSession(count: repCount, date: Date())
@@ -252,7 +417,6 @@ final class PushupCameraViewController: UIViewController {
 
     // MARK: - Pose handling (capture-device normalized coords)
     private func handlePoseObservation(_ obs: VNHumanBodyPoseObservation) {
-        // recognized points (capture-device normalized)
         var detected: [VNHumanBodyPoseObservation.JointName: (point: CGPoint, confidence: CGFloat)] = [:]
         let jointNames: [VNHumanBodyPoseObservation.JointName] = [
             .nose, .leftEye, .rightEye, .leftEar, .rightEar,
@@ -267,13 +431,11 @@ final class PushupCameraViewController: UIViewController {
             }
         }
 
-        // Merge with lastKnownPoints using exponential smoothing / fallback:
         var mergedPoints: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
         var mergedConf: [VNHumanBodyPoseObservation.JointName: CGFloat] = [:]
 
         for name in jointNames {
             if let det = detected[name] {
-                // new detection available -> smooth with previous position if exists
                 if let last = lastKnownPoints[name] {
                     let smoothedX = positionSmoothingAlpha * det.point.x + (1 - positionSmoothingAlpha) * last.x
                     let smoothedY = positionSmoothingAlpha * det.point.y + (1 - positionSmoothingAlpha) * last.y
@@ -283,21 +445,15 @@ final class PushupCameraViewController: UIViewController {
                 }
                 mergedConf[name] = det.confidence
             } else if let last = lastKnownPoints[name] {
-                // no detection this frame -> reuse previous with decay on confidence
                 mergedPoints[name] = last
                 let lastConf = lastKnownConfidences[name] ?? 0.0
-                // decay confidence so if missing for long time it'll drop
                 mergedConf[name] = max( minVisibleConfidence, lastConf * 0.85 )
-            } else {
-                // nothing at all -> skip
             }
         }
 
-        // Save merged into lastKnown for next frame
         lastKnownPoints = mergedPoints
         lastKnownConfidences = mergedConf
 
-        // Compute elbow angles using merged (smoothed) capture-device points (no flips here)
         var angles: [CGFloat] = []
         if let s = mergedPoints[.leftShoulder], let e = mergedPoints[.leftElbow], let w = mergedPoints[.leftWrist] {
             angles.append(angleBetween(a: s, b: e, c: w))
@@ -315,24 +471,43 @@ final class PushupCameraViewController: UIViewController {
         smoothedAngle = angleSmoothingAlpha * chosen + (1 - angleSmoothingAlpha) * smoothedAngle
 
         DispatchQueue.main.async {
-            // FSM for reps with relaxed thresholds (set above)
             if self.smoothedAngle < self.downThreshold {
                 self.armWasDown = true
             } else if self.armWasDown && self.smoothedAngle > self.upThreshold {
                 self.repCount += 1
                 self.armWasDown = false
+
+                // Check daily target and show congrats
+                if let target = self.dailyTarget, target > 0, self.repCount >= target, !self.didShowDailyCompleteAlert {
+                    self.didShowDailyCompleteAlert = true
+                    self.showDailyCompletionAlert()
+                }
             }
 
-            // Draw overlay using mergedPoints (capture-device coords)
             let img = self.drawSkeleton(points: mergedPoints, confidences: mergedConf, rep: self.repCount)
             self.overlayView.updateImage(img)
         }
     }
 
+    // show alert and then auto-finish session
+    private func showDailyCompletionAlert() {
+        let ac = UIAlertController(title: "Congratulations!", message: "You've completed today's target.", preferredStyle: .alert)
+        ac.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+            // Save & finish session as if user tapped Done
+            self.cameraManager.stopRunning()
+            CoreDataManager.shared.createPushupSession(count: self.repCount, date: Date())
+            DispatchQueue.main.async {
+                self.delegate?.pushupSessionDidFinish(count: self.repCount)
+                self.dismiss(animated: true)
+            }
+        })
+        // prevent presenting multiple alerts
+        if presentedViewController == nil {
+            present(ac, animated: true)
+        }
+    }
+
     // MARK: - Draw skeleton (flip both then convert)
-    // Points are capture-device normalized (0..1). Before projecting we flip both axes (1-x,1-y)
-    // and convert using previewLayer.layerPointConverted(fromCaptureDevicePoint:).
-    // Joints are drawn with size+outline dependent on merged confidence.
     private func drawSkeleton(points: [VNHumanBodyPoseObservation.JointName: CGPoint],
                               confidences: [VNHumanBodyPoseObservation.JointName: CGFloat],
                               rep: Int) -> CGImage? {
@@ -347,7 +522,6 @@ final class PushupCameraViewController: UIViewController {
         ctx.setFillColor(UIColor.systemGreen.cgColor)
 
         func mapPointFlipped(_ p: CGPoint) -> CGPoint {
-            // final chosen mapping (flip both) — tested to match preview
             let flipped = CGPoint(x: 1 - p.x, y: 1 - p.y)
             return cameraManager.previewLayer.layerPointConverted(fromCaptureDevicePoint: flipped)
         }
@@ -364,7 +538,6 @@ final class PushupCameraViewController: UIViewController {
             (.rightHip, .rightKnee), (.rightKnee, .rightAnkle)
         ]
 
-        // Draw bones (lines) first (semi-transparent)
         ctx.setLineWidth(3)
         ctx.setStrokeColor(UIColor(white: 1.0, alpha: 0.9).cgColor)
         for (a, b) in connections {
@@ -375,21 +548,17 @@ final class PushupCameraViewController: UIViewController {
             }
         }
 
-        // Draw joints with outline + fill + shadow
         for (joint, p) in points {
             let conf = confidences[joint] ?? minVisibleConfidence
-            // size mapping: between 6..16 px depending on confidence
             let minR: CGFloat = 6
             let maxR: CGFloat = 16
-            let radius = minR + (maxR - minR) * CGFloat(min(1.0, max(0.0, conf))) // clamp 0..1
+            let radius = minR + (maxR - minR) * CGFloat(min(1.0, max(0.0, conf)))
 
             let v = mapPointFlipped(p)
 
-            // shadow / glow
             ctx.saveGState()
             ctx.setShadow(offset: .zero, blur: 6, color: UIColor.black.withAlphaComponent(0.6).cgColor)
 
-            // fill color: green with alpha depending on conf
             let fillColor = UIColor.systemGreen.withAlphaComponent(0.95).cgColor
             ctx.setFillColor(fillColor)
             ctx.addEllipse(in: CGRect(x: v.x - radius/2, y: v.y - radius/2, width: radius, height: radius))
@@ -397,13 +566,11 @@ final class PushupCameraViewController: UIViewController {
 
             ctx.restoreGState()
 
-            // outline (white) for better contrast
             ctx.setLineWidth(2)
             ctx.setStrokeColor(UIColor.white.cgColor)
             ctx.addEllipse(in: CGRect(x: v.x - radius/2, y: v.y - radius/2, width: radius, height: radius))
             ctx.strokePath()
 
-            // if confidence is low, draw small inner circle (darker) to indicate uncertainty
             if conf < 0.2 {
                 ctx.setFillColor(UIColor.systemYellow.withAlphaComponent(0.9).cgColor)
                 let innerR = radius * 0.5
@@ -412,7 +579,6 @@ final class PushupCameraViewController: UIViewController {
             }
         }
 
-        // draw rep count
         let text = "Reps: \(rep)"
         let attrs: [NSAttributedString.Key: Any] = [
             .font: UIFont.boldSystemFont(ofSize: 20),
@@ -427,7 +593,6 @@ final class PushupCameraViewController: UIViewController {
 
     // MARK: - Math helper
     private func angleBetween(a: CGPoint, b: CGPoint, c: CGPoint) -> CGFloat {
-        // Input points are capture-device normalized coordinates (0..1) — vector math is invariant to scale.
         let v1 = CGVector(dx: a.x - b.x, dy: a.y - b.y)
         let v2 = CGVector(dx: c.x - b.x, dy: c.y - b.y)
         let dot = v1.dx * v2.dx + v1.dy * v2.dy
@@ -452,36 +617,13 @@ final class PushupCameraViewController: UIViewController {
             }
         }
         print("outputs count:", session.outputs.count)
-        for (i, out) in session.outputs.enumerated() {
-            print(" output[\(i)]:", type(of: out))
-            if let vOut = out as? AVCaptureVideoDataOutput {
-                if let conn = vOut.connection(with: .video) {
-                    print("  videoOutput connection - active:", conn.isActive,
-                          "mirroringSupported:", conn.isVideoMirroringSupported,
-                          "automaticallyAdjusts:", conn.automaticallyAdjustsVideoMirroring,
-                          "isMirrored:", conn.isVideoMirrored,
-                          "orientationSupported:", conn.isVideoOrientationSupported,
-                          "orientation:", conn.videoOrientation.rawValue)
-                } else {
-                    print("  videoOutput connection: nil")
-                }
-            }
-        }
-        let pl = cameraManager.previewLayer
-        print("previewLayer superlayer:", pl.superlayer != nil ? "yes" : "no")
-        print("previewLayer frame:", pl.frame)
-        print("previewContainer bounds:", previewContainer.bounds)
-        print("====================")
     }
 }
 
 // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
 extension PushupCameraViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
-    func captureOutput(_ output: AVCaptureOutput,
-                       didOutput sampleBuffer: CMSampleBuffer,
-                       from connection: AVCaptureConnection) {
-        frameCounter += 1
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        processFrame(pixelBuffer: pixelBuffer)
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard let pixel = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        processFrame(pixelBuffer: pixel)
     }
 }

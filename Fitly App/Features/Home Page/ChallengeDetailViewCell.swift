@@ -2,7 +2,7 @@
 //  ChallengeDetailViewCell.swift
 //  Fitly App
 //
-//  Created by Bakdaulet Yeskermes on 30.11.2025.
+//  UI cell for challenge details
 //
 
 import UIKit
@@ -257,7 +257,6 @@ final class ChallengeDetailViewCell: UIView {
     }
 
     // MARK: - Public update API
-    /// Update UI with provided values. Controller should call this after fetching Core Data values.
     func updateUI(exerciseName: String,
                   imageName: String?,
                   quantityPerDay: Int,
@@ -271,7 +270,6 @@ final class ChallengeDetailViewCell: UIView {
             headerImageView.image = img
         }
 
-        // metric cards titles
         if let dailyCard = metricsContainer.arrangedSubviews.first,
            let titleLbl = dailyCard.subviews.compactMap({ $0 as? UILabel }).first {
             titleLbl.text = "\(quantityPerDay) reps/day"
@@ -305,6 +303,17 @@ final class ChallengeDetailViewCell: UIView {
         // style metric icon backgrounds
         if let firstIconBg = (metricsContainer.arrangedSubviews.first?.subviews.compactMap { $0 as? UIView }.first) {
             firstIconBg.backgroundColor = accentColor
+        }
+
+        // If today's target reached - show completion state
+        if quantityPerDay > 0 && doneToday >= quantityPerDay {
+            startButton.setTitle("You've completed today", for: .normal)
+            startButton.backgroundColor = UIColor.systemGray
+            startButton.isEnabled = false
+        } else {
+            startButton.setTitle("Start", for: .normal)
+            startButton.backgroundColor = .app
+            startButton.isEnabled = true
         }
     }
 
@@ -398,12 +407,12 @@ private final class MiniProgressView: UIView {
             bg.topAnchor.constraint(equalTo: topAnchor),
             bg.leadingAnchor.constraint(equalTo: leadingAnchor),
             bg.trailingAnchor.constraint(equalTo: trailingAnchor),
-            bg.bottomAnchor.constraint(equalTo: bottomAnchor),
-
-            fg.topAnchor.constraint(equalTo: bg.topAnchor),
-            fg.leadingAnchor.constraint(equalTo: bg.leadingAnchor),
-            fg.bottomAnchor.constraint(equalTo: bg.bottomAnchor),
+            bg.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
+
+        fg.leadingAnchor.constraint(equalTo: bg.leadingAnchor).isActive = true
+        fg.topAnchor.constraint(equalTo: bg.topAnchor).isActive = true
+        fg.bottomAnchor.constraint(equalTo: bg.bottomAnchor).isActive = true
         fgWidthConstraint = fg.widthAnchor.constraint(equalToConstant: 0)
         fgWidthConstraint?.isActive = true
     }
@@ -413,12 +422,11 @@ private final class MiniProgressView: UIView {
     }
 
     func setProgress(_ progress: CGFloat, animated: Bool) {
-        let p = max(0, min(1, progress))
-        let full = bg.bounds.width
-        let newWidth = max(6, full * p)
-        fgWidthConstraint?.constant = newWidth
+        let clamped = max(0, min(1, progress))
+        let targetWidth = bounds.width * clamped
+        fgWidthConstraint?.constant = targetWidth
         if animated {
-            UIView.animate(withDuration: 0.35) { self.layoutIfNeeded() }
+            UIView.animate(withDuration: 0.22) { self.layoutIfNeeded() }
         } else {
             layoutIfNeeded()
         }
@@ -426,8 +434,11 @@ private final class MiniProgressView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        if fgWidthConstraint?.constant == 0 {
-            fgWidthConstraint?.constant = 0
+        // ensure width updated after layout
+        let clamped: CGFloat
+        if bounds.width > 0, let w = fgWidthConstraint?.constant {
+            clamped = w
+            fgWidthConstraint?.constant = clamped
         }
     }
 }

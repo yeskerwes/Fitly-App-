@@ -24,6 +24,7 @@ class HistoryViewController: UIViewController {
         setupTable()
         loadHistory()
 
+        // Reload when challenges change status (completed/cancelled/updated)
         NotificationCenter.default.addObserver(self, selector: #selector(historyNeedsReload(_:)), name: .challengeStatusChanged, object: nil)
     }
 
@@ -59,16 +60,30 @@ class HistoryViewController: UIViewController {
 
     // fetch completed + cancelled
     func loadHistory() {
+        // fetch completed and cancelled statuses
         let completed = CoreDataManager.shared.fetchChallenges(status: "completed")
         let cancelled = CoreDataManager.shared.fetchChallenges(status: "cancelled")
-        historyItems = (completed + cancelled).sorted {
-            ($0.createdAt ?? Date()) > ($1.createdAt ?? Date())
+        // combine and sort by most recent relevant date
+        historyItems = (completed + cancelled).sorted { a, b in
+            let dateA = preferredHistoryDate(for: a) ?? Date.distantPast
+            let dateB = preferredHistoryDate(for: b) ?? Date.distantPast
+            return dateA > dateB
         }
         tableView.reloadData()
     }
 
     @objc private func historyNeedsReload(_ notification: Notification) {
+        // If notification includes id/status, we still reload to keep UI simple
         loadHistory()
+    }
+
+    // Helper: pick completedAt if present, else createdAt
+    private func preferredHistoryDate(for entity: ChallengeEntity) -> Date? {
+        if entity.entity.attributesByName.keys.contains("completedAt"),
+           let d = entity.value(forKey: "completedAt") as? Date {
+            return d
+        }
+        return entity.createdAt
     }
 }
 
@@ -101,6 +116,8 @@ extension HistoryViewController: UITableViewDataSource, UITableViewDelegate {
     // optional: tap to view details
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        // optionally show details screen
+        let entity = historyItems[indexPath.row]
+        let vc = ChallengeDetailViewController(entity: entity)
+        navigationController?.pushViewController(vc, animated: true)
     }
 }
