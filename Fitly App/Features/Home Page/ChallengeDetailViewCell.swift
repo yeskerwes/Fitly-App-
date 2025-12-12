@@ -1,12 +1,11 @@
 import UIKit
+import SnapKit
 
 final class ChallengeDetailViewCell: UIView {
 
-    // MARK: - Callbacks
     var onStartTapped: (() -> Void)?
     var onBackTapped: (() -> Void)?
 
-    // MARK: - Font helper (Poppins with fallback)
     private func poppinsFont(_ style: String, size: CGFloat) -> UIFont {
         if let f = UIFont(name: style, size: size) { return f }
         switch style.lowercased() {
@@ -21,7 +20,6 @@ final class ChallengeDetailViewCell: UIView {
         }
     }
 
-    // MARK: - Views (public for controller to change if needed)
     let scrollView = UIScrollView()
     let content = UIView()
 
@@ -29,14 +27,12 @@ final class ChallengeDetailViewCell: UIView {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
-        iv.translatesAutoresizingMaskIntoConstraints = false
         return iv
     }()
 
     private let headerOverlay: UIView = {
         let v = UIView()
         v.backgroundColor = UIColor(white: 0, alpha: 0.18)
-        v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
 
@@ -44,7 +40,6 @@ final class ChallengeDetailViewCell: UIView {
         let l = UILabel()
         l.font = UIFont(name: "Poppins-Bold", size: 30) ?? UIFont.systemFont(ofSize: 30, weight: .bold)
         l.textColor = .white
-        l.translatesAutoresizingMaskIntoConstraints = false
         l.numberOfLines = 2
         return l
     }()
@@ -53,7 +48,6 @@ final class ChallengeDetailViewCell: UIView {
         let l = UILabel()
         l.font = UIFont(name: "Poppins-SemiBold", size: 16) ?? UIFont.systemFont(ofSize: 16, weight: .semibold)
         l.textColor = .white
-        l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
@@ -62,7 +56,6 @@ final class ChallengeDetailViewCell: UIView {
         s.axis = .horizontal
         s.spacing = 12
         s.distribution = .fillEqually
-        s.translatesAutoresizingMaskIntoConstraints = false
         return s
     }()
 
@@ -71,7 +64,6 @@ final class ChallengeDetailViewCell: UIView {
         l.text = "DONE TODAY"
         l.font = UIFont(name: "Poppins-SemiBold", size: 13) ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
         l.textColor = .darkGray
-        l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
@@ -80,7 +72,6 @@ final class ChallengeDetailViewCell: UIView {
         l.text = "0 / 0"
         l.font = UIFont(name: "Poppins-SemiBold", size: 13) ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
         l.textColor = .darkGray
-        l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
@@ -91,7 +82,6 @@ final class ChallengeDetailViewCell: UIView {
         l.text = "COMPLETED DAYS"
         l.font = UIFont(name: "Poppins-SemiBold", size: 13) ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
         l.textColor = .darkGray
-        l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
 
@@ -100,7 +90,6 @@ final class ChallengeDetailViewCell: UIView {
         s.axis = .horizontal
         s.spacing = 8
         s.distribution = .fillEqually
-        s.translatesAutoresizingMaskIntoConstraints = false
         return s
     }()
 
@@ -115,12 +104,10 @@ final class ChallengeDetailViewCell: UIView {
         b.setTitleColor(.white, for: .normal)
         b.layer.cornerRadius = 28
         b.backgroundColor = .app
-        b.translatesAutoresizingMaskIntoConstraints = false
         b.layer.masksToBounds = true
         return b
     }()
 
-    // MARK: - Init
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupHierarchy()
@@ -135,10 +122,7 @@ final class ChallengeDetailViewCell: UIView {
         setupActions()
     }
 
-    // MARK: - Setup
     private func setupHierarchy() {
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        content.translatesAutoresizingMaskIntoConstraints = false
         addSubview(scrollView)
         scrollView.addSubview(content)
 
@@ -162,75 +146,88 @@ final class ChallengeDetailViewCell: UIView {
     }
 
     private func setupConstraints() {
-        translatesAutoresizingMaskIntoConstraints = false
-        let safe = safeAreaLayoutGuide
         let headerHeight: CGFloat = 240
+        let safe = safeAreaLayoutGuide
 
-        NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: safe.topAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
+        scrollView.snp.makeConstraints { make in
+            make.top.equalTo(safe.snp.top)
+            make.leading.trailing.bottom.equalToSuperview()
+        }
 
-            content.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            content.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            content.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            content.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+        content.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+            make.width.equalTo(self)
+        }
 
-            headerImageView.topAnchor.constraint(equalTo: content.topAnchor),
-            headerImageView.leadingAnchor.constraint(equalTo: content.leadingAnchor),
-            headerImageView.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            headerImageView.heightAnchor.constraint(equalToConstant: headerHeight),
+        headerImageView.snp.makeConstraints { make in
+            make.top.leading.trailing.equalToSuperview()
+            make.height.equalTo(headerHeight)
+        }
 
-            headerOverlay.topAnchor.constraint(equalTo: headerImageView.topAnchor),
-            headerOverlay.bottomAnchor.constraint(equalTo: headerImageView.bottomAnchor),
-            headerOverlay.leadingAnchor.constraint(equalTo: headerImageView.leadingAnchor),
-            headerOverlay.trailingAnchor.constraint(equalTo: headerImageView.trailingAnchor),
-            titleLabel.leadingAnchor.constraint(equalTo: headerImageView.leadingAnchor, constant: 16),
-            titleLabel.bottomAnchor.constraint(equalTo: headerImageView.centerYAnchor, constant: 20),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: headerImageView.trailingAnchor, constant: -16),
+        headerOverlay.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
 
-            feeLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            feeLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
+        titleLabel.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.lessThanOrEqualToSuperview().inset(16)
+            make.bottom.equalTo(headerImageView.snp.centerY).offset(20)
+        }
 
-            metricsContainer.topAnchor.constraint(equalTo: headerImageView.bottomAnchor, constant: 18),
-            metricsContainer.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
-            metricsContainer.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
-            metricsContainer.heightAnchor.constraint(equalToConstant: 110),
+        feeLabel.snp.makeConstraints { make in
+            make.leading.equalTo(titleLabel)
+            make.top.equalTo(titleLabel.snp.bottom).offset(8)
+        }
 
-            doneTodayLabel.topAnchor.constraint(equalTo: metricsContainer.bottomAnchor, constant: 22),
-            doneTodayLabel.leadingAnchor.constraint(equalTo: metricsContainer.leadingAnchor),
+        metricsContainer.snp.makeConstraints { make in
+            make.top.equalTo(headerImageView.snp.bottom).offset(18)
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().inset(16)
+            make.height.equalTo(110)
+        }
 
-            doneTodayValueLabel.centerYAnchor.constraint(equalTo: doneTodayLabel.centerYAnchor),
-            doneTodayValueLabel.trailingAnchor.constraint(equalTo: metricsContainer.trailingAnchor),
+        doneTodayLabel.snp.makeConstraints { make in
+            make.top.equalTo(metricsContainer.snp.bottom).offset(22)
+            make.leading.equalTo(metricsContainer.snp.leading)
+        }
 
-            doneProgress.topAnchor.constraint(equalTo: doneTodayLabel.bottomAnchor, constant: 10),
-            doneProgress.leadingAnchor.constraint(equalTo: metricsContainer.leadingAnchor),
-            doneProgress.trailingAnchor.constraint(equalTo: metricsContainer.trailingAnchor),
-            doneProgress.heightAnchor.constraint(equalToConstant: 10),
+        doneTodayValueLabel.snp.makeConstraints { make in
+            make.centerY.equalTo(doneTodayLabel)
+            make.trailing.equalTo(metricsContainer.snp.trailing)
+        }
 
-            completedLabel.topAnchor.constraint(equalTo: doneProgress.bottomAnchor, constant: 18),
-            completedLabel.leadingAnchor.constraint(equalTo: metricsContainer.leadingAnchor),
+        doneProgress.snp.makeConstraints { make in
+            make.top.equalTo(doneTodayLabel.snp.bottom).offset(10)
+            make.leading.equalTo(metricsContainer.snp.leading)
+            make.trailing.equalTo(metricsContainer.snp.trailing)
+            make.height.equalTo(10)
+        }
 
-            completedPillsStack.topAnchor.constraint(equalTo: completedLabel.bottomAnchor, constant: 10),
-            completedPillsStack.leadingAnchor.constraint(equalTo: metricsContainer.leadingAnchor),
-            completedPillsStack.trailingAnchor.constraint(equalTo: metricsContainer.trailingAnchor),
-            completedPillsStack.heightAnchor.constraint(equalToConstant: 16),
+        completedLabel.snp.makeConstraints { make in
+            make.top.equalTo(doneProgress.snp.bottom).offset(18)
+            make.leading.equalTo(metricsContainer.snp.leading)
+        }
 
-            startButton.topAnchor.constraint(equalTo: completedPillsStack.bottomAnchor, constant: 28),
-            startButton.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 16),
-            startButton.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -16),
-            startButton.heightAnchor.constraint(equalToConstant: 64),
-            startButton.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -24)
-        ])
+        completedPillsStack.snp.makeConstraints { make in
+            make.top.equalTo(completedLabel.snp.bottom).offset(10)
+            make.leading.equalTo(metricsContainer.snp.leading)
+            make.trailing.equalTo(metricsContainer.snp.trailing)
+            make.height.equalTo(16)
+        }
+
+        startButton.snp.makeConstraints { make in
+            make.top.equalTo(completedPillsStack.snp.bottom).offset(28)
+            make.leading.equalToSuperview().offset(16)
+            make.trailing.equalToSuperview().inset(16)
+            make.height.equalTo(64)
+            make.bottom.equalToSuperview().inset(24)
+        }
     }
 
     private func setupActions() {
         startButton.addTarget(self, action: #selector(handleStart), for: .touchUpInside)
     }
 
-    // MARK: - Public update API
     func updateUI(exerciseName: String,
                   imageName: String?,
                   quantityPerDay: Int,
@@ -260,7 +257,6 @@ final class ChallengeDetailViewCell: UIView {
         let progress: CGFloat = quantityPerDay > 0 ? CGFloat(min(doneToday, quantityPerDay)) / CGFloat(quantityPerDay) : 0
         doneProgress.setProgress(progress, animated: true)
 
-        // pills
         completedPillsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         let maxPills = min(max(daysTotal, 0), 120)
         for i in 0..<maxPills {
@@ -268,18 +264,17 @@ final class ChallengeDetailViewCell: UIView {
             pill.layer.cornerRadius = 8
             pill.layer.borderWidth = 1
             pill.layer.borderColor = UIColor(white: 0.9, alpha: 1).cgColor
-            pill.translatesAutoresizingMaskIntoConstraints = false
             pill.backgroundColor = i < completedDays ? accentColor : .white
             completedPillsStack.addArrangedSubview(pill)
-            pill.heightAnchor.constraint(equalToConstant: 14).isActive = true
+            pill.snp.makeConstraints { make in
+                make.height.equalTo(14)
+            }
         }
 
-        // style metric icon backgrounds
         if let firstIconBg = (metricsContainer.arrangedSubviews.first?.subviews.compactMap { $0 as? UIView }.first) {
             firstIconBg.backgroundColor = accentColor
         }
 
-        // If today's target reached - show completion state
         if quantityPerDay > 0 && doneToday >= quantityPerDay {
             startButton.setTitle("You've completed today", for: .normal)
             startButton.backgroundColor = UIColor.systemGray
@@ -291,7 +286,6 @@ final class ChallengeDetailViewCell: UIView {
         }
     }
 
-    // MARK: - Private helpers
     @objc private func handleStart() {
         onStartTapped?()
     }
@@ -302,62 +296,61 @@ final class ChallengeDetailViewCell: UIView {
 
     private func metricCard(iconName: String, title: String, subtitle: String) -> UIView {
         let card = UIView()
-        card.translatesAutoresizingMaskIntoConstraints = false
 
         let iconBg = UIView()
         iconBg.layer.cornerRadius = 28
-        iconBg.translatesAutoresizingMaskIntoConstraints = false
 
         let icon = UIImageView(image: UIImage(systemName: iconName))
         icon.tintColor = .white
-        icon.translatesAutoresizingMaskIntoConstraints = false
+        icon.contentMode = .center
 
         let titleLabel = UILabel()
         titleLabel.text = title
         titleLabel.font = poppinsFont("Poppins-SemiBold", size: 18)
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         let subtitleLabel = UILabel()
         subtitleLabel.text = subtitle
         subtitleLabel.font = poppinsFont("Poppins-Regular", size: 13)
         subtitleLabel.textColor = UIColor.darkGray.withAlphaComponent(0.9)
-        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         card.addSubview(iconBg)
         iconBg.addSubview(icon)
         card.addSubview(titleLabel)
         card.addSubview(subtitleLabel)
 
-        NSLayoutConstraint.activate([
-            iconBg.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
-            iconBg.centerYAnchor.constraint(equalTo: card.centerYAnchor),
-            iconBg.widthAnchor.constraint(equalToConstant: 56),
-            iconBg.heightAnchor.constraint(equalToConstant: 56),
+        iconBg.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(16)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(56)
+        }
 
-            icon.centerXAnchor.constraint(equalTo: iconBg.centerXAnchor),
-            icon.centerYAnchor.constraint(equalTo: iconBg.centerYAnchor),
-            icon.widthAnchor.constraint(equalToConstant: 26),
-            icon.heightAnchor.constraint(equalToConstant: 26),
+        icon.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.width.height.equalTo(26)
+        }
 
-            titleLabel.leadingAnchor.constraint(equalTo: iconBg.trailingAnchor, constant: 12),
-            titleLabel.topAnchor.constraint(equalTo: iconBg.topAnchor, constant: 6),
-            titleLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12),
+        titleLabel.snp.makeConstraints { make in
+            make.leading.equalTo(iconBg.snp.trailing).offset(12)
+            make.top.equalTo(iconBg.snp.top).offset(6)
+            make.trailing.equalToSuperview().inset(12)
+        }
 
-            subtitleLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
-            subtitleLabel.bottomAnchor.constraint(equalTo: iconBg.bottomAnchor, constant: -2),
-            subtitleLabel.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -12)
-        ])
+        subtitleLabel.snp.makeConstraints { make in
+            make.leading.equalTo(titleLabel)
+            make.bottom.equalTo(iconBg.snp.bottom).offset(-2)
+            make.trailing.equalToSuperview().inset(12)
+        }
 
         iconBg.backgroundColor = .app
         return card
     }
 }
 
-// MARK: - MiniProgressView (internal to UI file)
 private final class MiniProgressView: UIView {
     private let bg = UIView()
     private let fg = UIView()
-    private var fgWidthConstraint: NSLayoutConstraint?
+    private var fgWidthConstraint: Constraint?
+    private var currentProgress: CGFloat = 0
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -367,28 +360,19 @@ private final class MiniProgressView: UIView {
     required init?(coder: NSCoder) { super.init(coder: coder); setup() }
 
     private func setup() {
-        translatesAutoresizingMaskIntoConstraints = false
-        bg.translatesAutoresizingMaskIntoConstraints = false
         bg.backgroundColor = UIColor(white: 0.9, alpha: 1)
         bg.layer.cornerRadius = 5
         addSubview(bg)
+        bg.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
 
-        fg.translatesAutoresizingMaskIntoConstraints = false
-        fg.layer.cornerRadius = 5
         bg.addSubview(fg)
-
-        NSLayoutConstraint.activate([
-            bg.topAnchor.constraint(equalTo: topAnchor),
-            bg.leadingAnchor.constraint(equalTo: leadingAnchor),
-            bg.trailingAnchor.constraint(equalTo: trailingAnchor),
-            bg.bottomAnchor.constraint(equalTo: bottomAnchor)
-        ])
-
-        fg.leadingAnchor.constraint(equalTo: bg.leadingAnchor).isActive = true
-        fg.topAnchor.constraint(equalTo: bg.topAnchor).isActive = true
-        fg.bottomAnchor.constraint(equalTo: bg.bottomAnchor).isActive = true
-        fgWidthConstraint = fg.widthAnchor.constraint(equalToConstant: 0)
-        fgWidthConstraint?.isActive = true
+        fg.layer.cornerRadius = 5
+        fg.snp.makeConstraints { make in
+            make.leading.top.bottom.equalToSuperview()
+            fgWidthConstraint = make.width.equalTo(0).constraint
+        }
     }
 
     func setAccentColor(_ color: UIColor) {
@@ -397,8 +381,9 @@ private final class MiniProgressView: UIView {
 
     func setProgress(_ progress: CGFloat, animated: Bool) {
         let clamped = max(0, min(1, progress))
+        currentProgress = clamped
         let targetWidth = bounds.width * clamped
-        fgWidthConstraint?.constant = targetWidth
+        fgWidthConstraint?.update(offset: targetWidth)
         if animated {
             UIView.animate(withDuration: 0.22) { self.layoutIfNeeded() }
         } else {
@@ -408,10 +393,7 @@ private final class MiniProgressView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        let clamped: CGFloat
-        if bounds.width > 0, let w = fgWidthConstraint?.constant {
-            clamped = w
-            fgWidthConstraint?.constant = clamped
-        }
+        let targetWidth = bounds.width * currentProgress
+        fgWidthConstraint?.update(offset: targetWidth)
     }
 }

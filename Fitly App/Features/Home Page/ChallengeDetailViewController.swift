@@ -5,8 +5,6 @@ final class ChallengeDetailViewController: UIViewController {
 
     // MARK: - Data
     private let entity: ChallengeEntity
-
-    // UI (the whole screen is inside this UIView)
     private lazy var detailView: ChallengeDetailViewCell = {
         let v = ChallengeDetailViewCell()
         v.translatesAutoresizingMaskIntoConstraints = false
@@ -32,7 +30,6 @@ final class ChallengeDetailViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        // nothing else needed; UI handles its own gradients if any
     }
 
     // MARK: - Setup
@@ -57,7 +54,6 @@ final class ChallengeDetailViewController: UIViewController {
 
     // MARK: - Configure from Core Data entity
     private func configureFromEntity() {
-        // safe reads for possible Int/Int16 types
         let quantityPerDay = Int(entity.quantityPerDay)
         let daysTotal = Int(entity.days)
 
@@ -78,9 +74,7 @@ final class ChallengeDetailViewController: UIViewController {
 
     // MARK: - Start flow (logic)
     private func startAction() {
-        // Prevent starting if already completed (status completed)
         if let s = entity.status, s == "completed" {
-            // optionally show info alert
             let ac = UIAlertController(title: "Completed", message: "This challenge is already finished.", preferredStyle: .alert)
             ac.addAction(UIAlertAction(title: "OK", style: .default))
             present(ac, animated: true)
@@ -90,7 +84,7 @@ final class ChallengeDetailViewController: UIViewController {
         let cam = PushupCameraViewController()
         cam.modalPresentationStyle = .fullScreen
         cam.delegate = self
-        cam.dailyTarget = Int(entity.quantityPerDay) // pass daily target
+        cam.dailyTarget = Int(entity.quantityPerDay)
         present(cam, animated: true, completion: nil)
     }
 
@@ -127,16 +121,13 @@ final class ChallengeDetailViewController: UIViewController {
         setIntValue(newCompleted, forKey: "completedDays", on: entity)
         setIntValue(0, forKey: "doneToday", on: entity)
 
-        // If we've reached total days, mark the challenge as fully completed
         let totalDays = Int(entity.days)
         if totalDays > 0 && newCompleted >= totalDays {
             entity.status = "completed"
-
-            // Save completion time: use attribute "completedAt" if present, else overwrite createdAt
+            
             if entity.entity.attributesByName.keys.contains("completedAt") {
                 entity.setValue(Date(), forKey: "completedAt")
             } else {
-                // fallback: overwrite createdAt so history will show closing time
                 entity.setValue(Date(), forKey: "createdAt")
             }
         }
@@ -151,9 +142,7 @@ final class ChallengeDetailViewController: UIViewController {
         } catch {
             print("Failed to save ChallengeEntity changes:", error)
         }
-        // update UI
         configureFromEntity()
-        // notify listeners with actual status (so Main/History update)
         NotificationCenter.default.post(name: .challengeStatusChanged, object: nil, userInfo: ["id": entity.value(forKey: "id") as Any, "status": entity.status ?? "updated"])
     }
 }
@@ -162,14 +151,11 @@ final class ChallengeDetailViewController: UIViewController {
 extension ChallengeDetailViewController: PushupCameraDelegate {
     func pushupSessionDidFinish(count: Int) {
         guard count > 0 else {
-            // nothing to save; you might show a message if you want
             return
         }
 
-        // add counted reps to doneToday
         incrementDoneToday(by: count)
 
-        // If reached or exceeded daily target -> mark day completed
         let quantityPerDay = Int(entity.quantityPerDay)
         let newDone = intValueSafely(forKey: "doneToday", in: entity) ?? 0
         if quantityPerDay > 0 && newDone >= quantityPerDay {
@@ -178,6 +164,5 @@ extension ChallengeDetailViewController: PushupCameraDelegate {
     }
 
     func pushupSessionDidCancel() {
-        // nothing special
     }
 }

@@ -2,10 +2,8 @@ import UIKit
 import CoreData
 import SnapKit
 
-// Notification name used to inform History to reload
 extension Notification.Name {
     static let challengeStatusChanged = Notification.Name("challengeStatusChanged")
-    // settingsChanged defined in CoreDataManager.swift
 }
 
 class MainViewController: UIViewController {
@@ -13,7 +11,6 @@ class MainViewController: UIViewController {
     // MARK: - Data
     private var itemsEntities: [ChallengeEntity] = []
 
-    // Track which indexPath cell is currently opened (revealed Cancel)
     private var openedIndexPath: IndexPath?
 
     // MARK: - Top UI (kept simple)
@@ -32,7 +29,6 @@ class MainViewController: UIViewController {
         return l
     }()
 
-    // Avatar image shown in top-right
     private let avatarImageView: UIImageView = {
         let iv = UIImageView(image: UIImage(systemName: "person.crop.circle.fill"))
         iv.tintColor = .black
@@ -52,7 +48,6 @@ class MainViewController: UIViewController {
         return l
     }()
 
-    // Empty state UI
     private let infoLabel: UILabel = {
         let l = UILabel()
         l.text = "You don’t have bet yet"
@@ -61,7 +56,6 @@ class MainViewController: UIViewController {
         return l
     }()
 
-    // Collection (cards)
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.minimumLineSpacing = 28
@@ -92,18 +86,14 @@ class MainViewController: UIViewController {
         setupLayout()
         setupActions()
 
-        // preload Core Data container so context ready
         _ = CoreDataManager.shared.persistentContainer
 
-        // load active items
         loadActiveChallenges()
 
-        // add pan gesture for reveal/cancel
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handleCellPan(_:)))
         pan.delegate = self
         collectionView.addGestureRecognizer(pan)
 
-        // observe settings changes (username / avatar)
         NotificationCenter.default.addObserver(self, selector: #selector(settingsChanged(_:)), name: .settingsChanged, object: nil)
     }
 
@@ -114,7 +104,6 @@ class MainViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        // make avatar circular
         avatarImageView.layer.cornerRadius = avatarImageView.bounds.width / 2
     }
 
@@ -124,12 +113,10 @@ class MainViewController: UIViewController {
 
     // MARK: - Layout
     private func setupLayout() {
-        // add subviews
         [welcomeLabel, usernameLabel, avatarImageView, yourBetsLabel, infoLabel, collectionView, createBetButton].forEach {
             view.addSubview($0)
         }
 
-        // SnapKit constraints
         welcomeLabel.snp.makeConstraints { make in
             make.leading.equalTo(view.safeAreaLayoutGuide.snp.leading).offset(20)
             make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(6)
@@ -170,7 +157,6 @@ class MainViewController: UIViewController {
             make.height.equalTo(55)
         }
 
-        // ensure create button stays above collection content
         view.bringSubviewToFront(createBetButton)
     }
 
@@ -208,21 +194,17 @@ class MainViewController: UIViewController {
         infoLabel.isHidden = !isEmpty
         collectionView.isHidden = isEmpty
 
-        // кнопка всегда видима
         createBetButton.isHidden = false
 
-        // на всякий случай держим её сверху
         view.bringSubviewToFront(createBetButton)
     }
 
     // MARK: - Profile UI update (username & avatar)
     @objc private func settingsChanged(_ notification: Notification) {
-        // called when profile saved (CoreDataManager posts .settingsChanged)
         updateProfileUI()
     }
 
     private func updateProfileUI() {
-        // Username
         let name = CoreDataManager.shared.currentUsername()
         if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             welcomeLabel.text = "Welcome back,"
@@ -232,13 +214,11 @@ class MainViewController: UIViewController {
             usernameLabel.text = name
         }
 
-        // Avatar
         if let avatar = CoreDataManager.shared.currentAvatarImage() {
             avatarImageView.image = avatar
             avatarImageView.contentMode = .scaleAspectFill
             avatarImageView.tintColor = nil
         } else {
-            // fallback system icon (matches Profile UI)
             avatarImageView.image = UIImage(systemName: "person.crop.circle.fill")
             avatarImageView.tintColor = .black
             avatarImageView.contentMode = .scaleAspectFit
@@ -256,8 +236,6 @@ class MainViewController: UIViewController {
                   let cell = collectionView.cellForItem(at: indexPath) as? ChallengeCell else {
                 return
             }
-
-            // close previously opened cell
             if let opened = openedIndexPath, opened != indexPath {
                 if let prevCell = collectionView.cellForItem(at: opened) as? ChallengeCell {
                     prevCell.close(animated: true)
@@ -266,7 +244,6 @@ class MainViewController: UIViewController {
             }
 
             openedIndexPath = indexPath
-            // no immediate open — wait for movement
         case .changed:
             guard let indexPath = collectionView.indexPathForItem(at: location),
                   let cell = collectionView.cellForItem(at: indexPath) as? ChallengeCell else { return }
@@ -274,7 +251,6 @@ class MainViewController: UIViewController {
             if translation.x < -30 {
                 cell.open(animated: true)
                 openedIndexPath = indexPath
-                // set cancel handler
                 cell.onCancelTapped = { [weak self] in
                     guard let self = self else { return }
                     self.handleCancelAction(at: indexPath)
@@ -284,13 +260,12 @@ class MainViewController: UIViewController {
                 if openedIndexPath == indexPath { openedIndexPath = nil }
             }
         case .ended, .cancelled, .failed:
-            // if a cell is opened, ensure its handler is set (in case user lifted finger)
+
             if let idx = openedIndexPath, let cell = collectionView.cellForItem(at: idx) as? ChallengeCell {
                 let velocityX = gesture.velocity(in: collectionView).x
                 if velocityX < -200 {
                     cell.open(animated: true)
                 }
-                // ensure handler
                 cell.onCancelTapped = { [weak self] in
                     guard let self = self else { return }
                     self.handleCancelAction(at: idx)
@@ -306,10 +281,8 @@ class MainViewController: UIViewController {
         guard indexPath.item < itemsEntities.count else { return }
         let entity = itemsEntities[indexPath.item]
 
-        // Update Core Data
         CoreDataManager.shared.updateStatus(for: entity, to: "cancelled")
 
-        // Remove from local array and animate deletion
         itemsEntities.remove(at: indexPath.item)
         collectionView.performBatchUpdates({
             collectionView.deleteItems(at: [indexPath])
@@ -317,10 +290,8 @@ class MainViewController: UIViewController {
             self.updateUIForState()
         })
 
-        // clear opened index
         if openedIndexPath == indexPath { openedIndexPath = nil }
 
-        // Notify history to reload
         NotificationCenter.default.post(name: .challengeStatusChanged, object: nil, userInfo: ["id": entity.id as Any, "status": "cancelled"])
     }
 }
@@ -345,19 +316,15 @@ extension MainViewController: UICollectionViewDataSource, UICollectionViewDelega
         }
         let entity = itemsEntities[indexPath.item]
         cell.configure(with: entity)
-
-        // ensure closure is set (in case cell reused)
         cell.onCancelTapped = { [weak self] in
             guard let self = self else { return }
             self.handleCancelAction(at: indexPath)
         }
-
-        // ensure closed by default
+        
         cell.close(animated: false)
         return cell
     }
 
-    // card size — wide cards with internal paddings
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
