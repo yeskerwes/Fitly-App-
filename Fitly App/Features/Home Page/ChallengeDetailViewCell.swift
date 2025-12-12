@@ -1,10 +1,3 @@
-//
-//  ChallengeDetailViewCell.swift
-//  Fitly App
-//
-//  UI cell for challenge details
-//
-
 import UIKit
 
 final class ChallengeDetailViewCell: UIView {
@@ -127,17 +120,6 @@ final class ChallengeDetailViewCell: UIView {
         return b
     }()
 
-    private(set) var backButton: UIButton = {
-        let b = UIButton(type: .system)
-        let conf = UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
-        b.setImage(UIImage(systemName: "chevron.left", withConfiguration: conf), for: .normal)
-        b.tintColor = .white
-        b.backgroundColor = UIColor(white: 1, alpha: 0.15)
-        b.layer.cornerRadius = 20
-        b.translatesAutoresizingMaskIntoConstraints = false
-        return b
-    }()
-
     // MARK: - Init
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -162,7 +144,6 @@ final class ChallengeDetailViewCell: UIView {
 
         content.addSubview(headerImageView)
         headerImageView.addSubview(headerOverlay)
-        headerImageView.addSubview(backButton)
         headerImageView.addSubview(titleLabel)
         headerImageView.addSubview(feeLabel)
 
@@ -206,12 +187,6 @@ final class ChallengeDetailViewCell: UIView {
             headerOverlay.bottomAnchor.constraint(equalTo: headerImageView.bottomAnchor),
             headerOverlay.leadingAnchor.constraint(equalTo: headerImageView.leadingAnchor),
             headerOverlay.trailingAnchor.constraint(equalTo: headerImageView.trailingAnchor),
-
-            backButton.leadingAnchor.constraint(equalTo: headerImageView.leadingAnchor, constant: 12),
-            backButton.topAnchor.constraint(equalTo: headerImageView.topAnchor, constant: 12),
-            backButton.widthAnchor.constraint(equalToConstant: 40),
-            backButton.heightAnchor.constraint(equalToConstant: 40),
-
             titleLabel.leadingAnchor.constraint(equalTo: headerImageView.leadingAnchor, constant: 16),
             titleLabel.bottomAnchor.constraint(equalTo: headerImageView.centerYAnchor, constant: 20),
             titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: headerImageView.trailingAnchor, constant: -16),
@@ -253,7 +228,6 @@ final class ChallengeDetailViewCell: UIView {
 
     private func setupActions() {
         startButton.addTarget(self, action: #selector(handleStart), for: .touchUpInside)
-        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
     }
 
     // MARK: - Public update API
@@ -434,7 +408,6 @@ private final class MiniProgressView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        // ensure width updated after layout
         let clamped: CGFloat
         if bounds.width > 0, let w = fgWidthConstraint?.constant {
             clamped = w
