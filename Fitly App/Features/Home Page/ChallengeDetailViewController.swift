@@ -124,6 +124,7 @@ final class ChallengeDetailViewController: UIViewController {
         let totalDays = Int(entity.days)
         if totalDays > 0 && newCompleted >= totalDays {
             entity.status = "completed"
+            SoundManager.shared.playSuccess()
             
             if entity.entity.attributesByName.keys.contains("completedAt") {
                 entity.setValue(Date(), forKey: "completedAt")

@@ -118,7 +118,7 @@ class MainViewController: UIViewController {
         }
 
         welcomeLabel.snp.makeConstraints { make in
-            make.leading.equalTo(view.safeAreaLayoutGuide.snp.leading).offset(20)
+            make.leading.equalTo(view.safeAreaLayoutGuide.snp.leading).offset(10)
             make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(6)
         }
 
@@ -352,3 +352,4 @@ extension MainViewController: ModalBetViewControllerDelegate {
         controller.dismiss(animated: true, completion: nil)
     }
 }
+

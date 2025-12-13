@@ -1,9 +1,5 @@
-//
 // PushupCameraViewController.swift
-// Fitly App
-//
-// Modified: show congratulations alert when daily target reached
-//
+// (полный файл — изменён для воспроизведения звуков)
 
 import UIKit
 import AVFoundation
@@ -22,7 +18,6 @@ final class PushupCameraViewController: UIViewController {
     private let previewContainer = UIView()
     private let overlayView = OverlayView()
 
-    // small legacy label (kept for backward compatibility)
     private let countLabel: UILabel = {
         let l = UILabel()
         l.font = .boldSystemFont(ofSize: 34)
@@ -32,7 +27,6 @@ final class PushupCameraViewController: UIViewController {
         return l
     }()
 
-    // New UI pieces to match screenshot
     private let titleLabel: UILabel = {
         let l = UILabel()
         l.font = UIFont.systemFont(ofSize: 28, weight: .bold)
@@ -127,7 +121,6 @@ final class PushupCameraViewController: UIViewController {
                 self.countLabel.text = "\(self.repCount)"
                 self.bigCountLabel.text = "\(self.repCount)"
                 self.updateCounterUI()
-                // When repCount changed we may need to auto-show congrats (handled elsewhere)
             }
         }
     }
@@ -156,6 +149,10 @@ final class PushupCameraViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
+
+        // Prepare sounds early (assumes files "ding" and "succes" exist in bundle)
+        SoundManager.shared.prepareSounds(dingName: "ding", successName: "succes")
+
         setupUI()
         observeCameraNotifications()
         checkCameraPermissionAndConfigure()
@@ -165,8 +162,6 @@ final class PushupCameraViewController: UIViewController {
         super.viewDidLayoutSubviews()
         cameraManager.previewLayer.frame = previewContainer.bounds
         overlayView.frame = previewContainer.bounds
-
-        // update progress fill width constraint if needed (layout pass)
         updateCounterUI()
     }
 
@@ -185,22 +180,16 @@ final class PushupCameraViewController: UIViewController {
         overlayView.isUserInteractionEnabled = false
         previewContainer.addSubview(overlayView)
 
-        // add top title + counters
         view.addSubview(titleLabel)
         view.addSubview(bigCountLabel)
         view.addSubview(fractionLabel)
         view.addSubview(smallProgressBar)
         smallProgressBar.addSubview(smallProgressFill)
-
-        // small legacy count label (in case other code uses it)
         view.addSubview(countLabel)
-
-        // bottom controls
         view.addSubview(endSessionButton)
         view.addSubview(infoButton)
         view.addSubview(cameraWarningLabel)
 
-        // constraints
         NSLayoutConstraint.activate([
             previewContainer.topAnchor.constraint(equalTo: view.topAnchor),
             previewContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -231,7 +220,6 @@ final class PushupCameraViewController: UIViewController {
             countLabel.topAnchor.constraint(equalTo: smallProgressBar.bottomAnchor, constant: 6),
             countLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
-            // bottom buttons
             endSessionButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -40),
             endSessionButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -40),
             endSessionButton.heightAnchor.constraint(equalToConstant: 64),
@@ -247,14 +235,12 @@ final class PushupCameraViewController: UIViewController {
             cameraWarningLabel.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.9)
         ])
 
-        // smallProgressFill width constraint (starts 0)
         smallProgressFill.leadingAnchor.constraint(equalTo: smallProgressBar.leadingAnchor).isActive = true
         smallProgressFill.topAnchor.constraint(equalTo: smallProgressBar.topAnchor).isActive = true
         smallProgressFill.bottomAnchor.constraint(equalTo: smallProgressBar.bottomAnchor).isActive = true
         smallProgressFillWidthConstraint = smallProgressFill.widthAnchor.constraint(equalToConstant: 0)
         smallProgressFillWidthConstraint?.isActive = true
 
-        // actions
         endSessionButton.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
         infoButton.addTarget(self, action: #selector(infoTapped), for: .touchUpInside)
 
@@ -263,12 +249,10 @@ final class PushupCameraViewController: UIViewController {
         view.addGestureRecognizer(dbl)
     }
 
-    // update progress / fraction
     private func updateCounterUI() {
         DispatchQueue.main.async {
             let total = self.dailyTarget ?? 0
             self.fractionLabel.text = "/\(total)"
-            // compute fill width
             let barW = self.smallProgressBar.bounds.width
             let percent: CGFloat
             if total <= 0 { percent = 0 }
@@ -477,9 +461,15 @@ final class PushupCameraViewController: UIViewController {
                 self.repCount += 1
                 self.armWasDown = false
 
+                // play per-rep sound
+                SoundManager.shared.playDing()
+
                 // Check daily target and show congrats
                 if let target = self.dailyTarget, target > 0, self.repCount >= target, !self.didShowDailyCompleteAlert {
                     self.didShowDailyCompleteAlert = true
+
+                    // play success sound, then show alert
+                    SoundManager.shared.playSuccess()
                     self.showDailyCompletionAlert()
                 }
             }
@@ -501,7 +491,6 @@ final class PushupCameraViewController: UIViewController {
                 self.dismiss(animated: true)
             }
         })
-        // prevent presenting multiple alerts
         if presentedViewController == nil {
             present(ac, animated: true)
         }

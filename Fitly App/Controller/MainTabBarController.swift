@@ -19,14 +19,18 @@ class MainTabBarController: UITabBarController {
     private func setupTabs() {
         let main = MainViewController()
         main.tabBarItem = UITabBarItem(title: "Main", image: UIImage(systemName: "house"), tag: 0)
+        
+        let search = SearchViewController()
+        let searchNav = UINavigationController(rootViewController: search)
+        searchNav.tabBarItem = UITabBarItem(title: "Search", image: UIImage(systemName: "magnifyingglass"), tag: 1)
 
         let history = HistoryViewController()
-        history.tabBarItem = UITabBarItem(title: "History", image: UIImage(systemName: "clock"), tag: 1)
+        history.tabBarItem = UITabBarItem(title: "History", image: UIImage(systemName: "clock"), tag: 2)
 
         let profile = ProfileViewController()
-        profile.tabBarItem = UITabBarItem(title: "Profile", image: UIImage(systemName: "person"), tag: 2)
+        profile.tabBarItem = UITabBarItem(title: "Profile", image: UIImage(systemName: "person"), tag: 3)
 
-        viewControllers = [main, history, profile]
+        viewControllers = [main, searchNav, history, profile]
     }
 
     private func setupTabBarAppearance() {
