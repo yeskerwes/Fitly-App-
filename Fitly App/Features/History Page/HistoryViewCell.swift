@@ -8,9 +8,9 @@
 import UIKit
 import SnapKit
 
-class HistoryCell: UITableViewCell {
+final class HistoryViewCell: UITableViewCell {
 
-    static let reuseId = "HistoryCell"
+    static let reuseId = "HistoryViewCell"
 
     private let thumbImageView: UIImageView = {
         let iv = UIImageView()

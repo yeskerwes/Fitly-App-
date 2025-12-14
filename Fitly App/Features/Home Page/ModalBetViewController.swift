@@ -21,7 +21,6 @@ final class ModalBetViewController: UIViewController {
     private let containerView = UIView()
     private let designView = ModalBetViewCell()
 
-    /// constraint для анимации
     private var containerBottomConstraint: Constraint?
 
     // MARK: - Lifecycle
@@ -43,7 +42,6 @@ final class ModalBetViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .clear
 
-        // dim
         dimView.backgroundColor = UIColor.black.withAlphaComponent(0.45)
         dimView.alpha = 0
         view.addSubview(dimView)
@@ -55,7 +53,6 @@ final class ModalBetViewController: UIViewController {
         let tap = UITapGestureRecognizer(target: self, action: #selector(close))
         dimView.addGestureRecognizer(tap)
 
-        // container
         view.addSubview(containerView)
         containerView.backgroundColor = .clear
 
@@ -65,7 +62,6 @@ final class ModalBetViewController: UIViewController {
             containerBottomConstraint = $0.top.equalTo(view.snp.bottom).constraint
         }
 
-        // design view
         containerView.addSubview(designView)
         designView.snp.makeConstraints {
             $0.edges.equalToSuperview()
