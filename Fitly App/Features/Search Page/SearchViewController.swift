@@ -22,6 +22,7 @@ final class SearchViewController: UIViewController {
     private let searchButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Search", for: .normal)
+        b.tintColor = .app
         b.titleLabel?.font = .boldSystemFont(ofSize: 16)
         return b
     }()
@@ -192,6 +193,7 @@ extension SearchViewController: UITableViewDataSource, UITableViewDelegate {
             let cell = tableView.dequeueReusableCell(withIdentifier: "suggestion", for: indexPath)
             cell.textLabel?.text = viewModel.suggestions[indexPath.row]
             cell.imageView?.image = UIImage(systemName: "magnifyingglass")
+            cell.tintColor = .app
             cell.accessoryType = .none
             return cell
         }
