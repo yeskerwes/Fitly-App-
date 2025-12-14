@@ -18,7 +18,6 @@ final class SearchViewController: UIViewController {
     // MARK: - Data
     private var videoResults: [VideoItem] = []
 
-    // Suggestions
     private var suggestions: [String] = []
     private let staticSuggestions: [String] = [
         "Push up technique",
@@ -38,10 +37,8 @@ final class SearchViewController: UIViewController {
         set { UserDefaults.standard.setValue(newValue, forKey: "recent_searches") }
     }
 
-    // UI state: true -> show suggestions, false -> show results
     private var showingSuggestions = true
 
-    // Debounce
     private var debounceWorkItem: DispatchWorkItem?
 
     // MARK: - Lifecycle
@@ -58,21 +55,18 @@ final class SearchViewController: UIViewController {
 
     // MARK: - Setup Views
     private func setupViews() {
-        // Search bar
         searchBar.placeholder = "Search YouTube for exercise technique"
         searchBar.translatesAutoresizingMaskIntoConstraints = false
         searchBar.delegate = self
         searchBar.searchBarStyle = .minimal
         view.addSubview(searchBar)
 
-        // Search button
         searchButton.setTitle("Search", for: .normal)
         searchButton.titleLabel?.font = .boldSystemFont(ofSize: 16)
         searchButton.translatesAutoresizingMaskIntoConstraints = false
         searchButton.addTarget(self, action: #selector(handleSearchTapped), for: .touchUpInside)
         view.addSubview(searchButton)
 
-        // Table view
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.register(VideoCell.self, forCellReuseIdentifier: VideoCell.reuseId)
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "suggestion")
@@ -83,7 +77,6 @@ final class SearchViewController: UIViewController {
         tableView.tableFooterView = UIView()
         view.addSubview(tableView)
 
-        // Layout
         let guide = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
             searchBar.leadingAnchor.constraint(equalTo: guide.leadingAnchor, constant: 16),
@@ -113,11 +106,9 @@ final class SearchViewController: UIViewController {
     }
 
     private func performSearch(query: String) {
-        // switch to results mode
         showingSuggestions = false
         tableView.reloadData()
 
-        // show spinner in nav bar
         let spinner = UIActivityIndicatorView(style: .medium)
         navigationItem.rightBarButtonItem = UIBarButtonItem(customView: spinner)
         spinner.startAnimating()
@@ -146,7 +137,6 @@ final class SearchViewController: UIViewController {
     private func reloadSuggestions(filter: String) {
         let recents = recentSearches
         if filter.isEmpty {
-            // show recent first then static suggestions
             suggestions = recents + staticSuggestions
         } else {
             let lower = filter.lowercased()
@@ -206,7 +196,6 @@ final class SearchViewController: UIViewController {
 // MARK: - UISearchBarDelegate
 extension SearchViewController: UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        // debounce filtering suggestions
         debounceWorkItem?.cancel()
         let current = DispatchWorkItem { [weak self] in
             self?.reloadSuggestions(filter: searchText)
@@ -220,7 +209,6 @@ extension SearchViewController: UISearchBarDelegate {
     }
 
     func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
-        // when user cancels, show suggestions again
         reloadSuggestions(filter: "")
     }
 }

@@ -5,11 +5,6 @@
 //  Created by Bakdaulet Yeskermes on 12.12.2025.
 //
 
-
-
-// ================= ImageLoader.swift =================
-// Simple image loader with in-memory cache and basic disk cache
-
 import UIKit
 
 final class ImageLoader {
@@ -24,7 +19,6 @@ final class ImageLoader {
             return cached
         }
 
-        // Try disk cache
         if let diskImage = loadFromDisk(url: url) {
             cache.setObject(diskImage, forKey: url.absoluteString as NSString)
             return diskImage

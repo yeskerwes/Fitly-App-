@@ -1,4 +1,5 @@
 import UIKit
+import SnapKit
 
 class ProfileViewController: UIViewController {
 
@@ -84,7 +85,6 @@ class ProfileViewController: UIViewController {
         return b
     }()
 
-    // rest of UI (appearance/notifications/reset) reuse previous layout...
     private let scrollView = UIScrollView()
     private let contentView = UIView()
     private let sectionProfileTitle: UILabel = {
@@ -114,7 +114,7 @@ class ProfileViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        setupViews()
+        setupConstraints()
         setupActions()
         loadSettings()
     }
@@ -124,128 +124,133 @@ class ProfileViewController: UIViewController {
         avatarImageView.layer.cornerRadius = avatarImageView.bounds.width / 2
     }
 
-    private func setupViews() {
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.translatesAutoresizingMaskIntoConstraints = false
+    // MARK: - Setup Views
+    private func setupConstraints() {
 
         view.addSubview(headerImageView)
-
         view.addSubview(avatarContainer)
         avatarContainer.addSubview(avatarImageView)
         avatarContainer.addSubview(cameraBadge)
         cameraBadge.addSubview(cameraIcon)
-
         view.addSubview(nameLabel)
 
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
 
-        contentView.addSubview(sectionProfileTitle)
-        contentView.addSubview(nameTextField)
-        contentView.addSubview(nameUnderline)
-        contentView.addSubview(saveButton)
+        [
+            sectionProfileTitle,
+            nameTextField,
+            nameUnderline,
+            saveButton,
+            sectionAppearanceTitle,
+            changeThemeLabel,
+            sectionNotificationsTitle,
+            notificationsLabel,
+            notificationsSwitch,
+            resetButton,
+            bottomSpacer
+        ].forEach { contentView.addSubview($0) }
 
-        contentView.addSubview(sectionAppearanceTitle)
-        contentView.addSubview(changeThemeLabel)
+        headerImageView.snp.makeConstraints {
+            $0.top.leading.trailing.equalToSuperview()
+            $0.height.equalTo(180)
+        }
 
-        contentView.addSubview(sectionNotificationsTitle)
-        contentView.addSubview(notificationsLabel)
-        contentView.addSubview(notificationsSwitch)
+        avatarContainer.snp.makeConstraints {
+            $0.centerX.equalToSuperview()
+            $0.top.equalTo(headerImageView.snp.bottom).offset(-64)
+            $0.size.equalTo(128)
+        }
 
-        contentView.addSubview(resetButton)
-        contentView.addSubview(bottomSpacer)
+        avatarImageView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+        }
 
-        let safe = view.safeAreaLayoutGuide
-        NSLayoutConstraint.activate([
-            // header
-            headerImageView.topAnchor.constraint(equalTo: view.topAnchor),
-            headerImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            headerImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            headerImageView.heightAnchor.constraint(equalToConstant: 180),
+        cameraBadge.snp.makeConstraints {
+            $0.size.equalTo(32)
+            $0.trailing.bottom.equalToSuperview().offset(6)
+        }
 
-            // avatar
-            avatarContainer.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            avatarContainer.topAnchor.constraint(equalTo: headerImageView.bottomAnchor, constant: -64),
-            avatarContainer.widthAnchor.constraint(equalToConstant: 128),
-            avatarContainer.heightAnchor.constraint(equalToConstant: 128),
+        cameraIcon.snp.makeConstraints {
+            $0.center.equalToSuperview()
+            $0.size.equalTo(16)
+        }
 
-            avatarImageView.centerXAnchor.constraint(equalTo: avatarContainer.centerXAnchor),
-            avatarImageView.centerYAnchor.constraint(equalTo: avatarContainer.centerYAnchor),
-            avatarImageView.widthAnchor.constraint(equalTo: avatarContainer.widthAnchor),
-            avatarImageView.heightAnchor.constraint(equalTo: avatarContainer.heightAnchor),
+        nameLabel.snp.makeConstraints {
+            $0.top.equalTo(avatarContainer.snp.bottom).offset(16)
+            $0.centerX.equalToSuperview()
+        }
 
-            cameraBadge.widthAnchor.constraint(equalToConstant: 32),
-            cameraBadge.heightAnchor.constraint(equalToConstant: 32),
-            cameraBadge.trailingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 6),
-            cameraBadge.bottomAnchor.constraint(equalTo: avatarImageView.bottomAnchor, constant: 6),
+        scrollView.snp.makeConstraints {
+            $0.top.equalTo(nameLabel.snp.bottom).offset(16)
+            $0.leading.trailing.bottom.equalToSuperview()
+        }
 
-            cameraIcon.centerXAnchor.constraint(equalTo: cameraBadge.centerXAnchor),
-            cameraIcon.centerYAnchor.constraint(equalTo: cameraBadge.centerYAnchor),
-            cameraIcon.widthAnchor.constraint(equalToConstant: 16),
-            cameraIcon.heightAnchor.constraint(equalToConstant: 16),
+        contentView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
+            $0.width.equalToSuperview()
+        }
 
-            // name
-            nameLabel.topAnchor.constraint(equalTo: avatarContainer.bottomAnchor, constant: 16),
-            nameLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+        sectionProfileTitle.snp.makeConstraints {
+            $0.top.equalToSuperview().offset(8)
+            $0.leading.equalToSuperview().offset(20)
+        }
 
-            // scroll
-            scrollView.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 16),
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        nameTextField.snp.makeConstraints {
+            $0.top.equalTo(sectionProfileTitle.snp.bottom).offset(16)
+            $0.leading.trailing.equalToSuperview().inset(20)
+            $0.height.equalTo(36)
+        }
 
-            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+        nameUnderline.snp.makeConstraints {
+            $0.top.equalTo(nameTextField.snp.bottom).offset(6)
+            $0.leading.trailing.equalTo(nameTextField)
+            $0.height.equalTo(1)
+        }
 
-            // Profile section
-            sectionProfileTitle.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
-            sectionProfileTitle.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+        saveButton.snp.makeConstraints {
+            $0.top.equalTo(nameUnderline.snp.bottom).offset(12)
+            $0.trailing.equalTo(nameTextField)
+        }
 
-            nameTextField.topAnchor.constraint(equalTo: sectionProfileTitle.bottomAnchor, constant: 16),
-            nameTextField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            nameTextField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            nameTextField.heightAnchor.constraint(equalToConstant: 36),
+        sectionAppearanceTitle.snp.makeConstraints {
+            $0.top.equalTo(saveButton.snp.bottom).offset(24)
+            $0.leading.equalToSuperview().offset(20)
+        }
 
-            nameUnderline.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 6),
-            nameUnderline.leadingAnchor.constraint(equalTo: nameTextField.leadingAnchor),
-            nameUnderline.trailingAnchor.constraint(equalTo: nameTextField.trailingAnchor),
-            nameUnderline.heightAnchor.constraint(equalToConstant: 1),
+        changeThemeLabel.snp.makeConstraints {
+            $0.top.equalTo(sectionAppearanceTitle.snp.bottom).offset(16)
+            $0.leading.equalToSuperview().offset(20)
+        }
 
-            saveButton.topAnchor.constraint(equalTo: nameUnderline.bottomAnchor, constant: 12),
-            saveButton.trailingAnchor.constraint(equalTo: nameTextField.trailingAnchor),
+        sectionNotificationsTitle.snp.makeConstraints {
+            $0.top.equalTo(changeThemeLabel.snp.bottom).offset(24)
+            $0.leading.equalToSuperview().offset(20)
+        }
 
-            // Appearance
-            sectionAppearanceTitle.topAnchor.constraint(equalTo: saveButton.bottomAnchor, constant: 24),
-            sectionAppearanceTitle.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+        notificationsLabel.snp.makeConstraints {
+            $0.top.equalTo(sectionNotificationsTitle.snp.bottom).offset(16)
+            $0.leading.equalToSuperview().offset(20)
+        }
 
-            changeThemeLabel.topAnchor.constraint(equalTo: sectionAppearanceTitle.bottomAnchor, constant: 16),
-            changeThemeLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+        notificationsSwitch.snp.makeConstraints {
+            $0.centerY.equalTo(notificationsLabel)
+            $0.trailing.equalToSuperview().inset(20)
+        }
 
-            // Notifications
-            sectionNotificationsTitle.topAnchor.constraint(equalTo: changeThemeLabel.bottomAnchor, constant: 24),
-            sectionNotificationsTitle.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+        resetButton.snp.makeConstraints {
+            $0.top.equalTo(notificationsLabel.snp.bottom).offset(36)
+            $0.leading.equalToSuperview().offset(20)
+        }
 
-            notificationsLabel.topAnchor.constraint(equalTo: sectionNotificationsTitle.bottomAnchor, constant: 16),
-            notificationsLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-
-            notificationsSwitch.centerYAnchor.constraint(equalTo: notificationsLabel.centerYAnchor),
-            notificationsSwitch.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-
-            // Reset
-            resetButton.topAnchor.constraint(equalTo: notificationsLabel.bottomAnchor, constant: 36),
-            resetButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-
-            bottomSpacer.topAnchor.constraint(equalTo: resetButton.bottomAnchor),
-            bottomSpacer.heightAnchor.constraint(equalToConstant: 40),
-            bottomSpacer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
-        ])
+        bottomSpacer.snp.makeConstraints {
+            $0.top.equalTo(resetButton.snp.bottom)
+            $0.height.equalTo(40)
+            $0.bottom.equalToSuperview()
+        }
     }
 
     private func setupActions() {
-        // avatar tap
         let tap = UITapGestureRecognizer(target: self, action: #selector(avatarTapped))
         avatarImageView.isUserInteractionEnabled = true
         avatarImageView.addGestureRecognizer(tap)
@@ -264,7 +269,6 @@ class ProfileViewController: UIViewController {
             avatarImageView.contentMode = .scaleAspectFill
             avatarImageView.tintColor = nil
         } else {
-            // show system icon if no avatar
             avatarImageView.image = UIImage(systemName: "person.crop.circle.fill")
             avatarImageView.tintColor = .black
             avatarImageView.contentMode = .scaleAspectFit
@@ -275,13 +279,11 @@ class ProfileViewController: UIViewController {
     @objc private func saveTapped() {
         let name = nameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         CoreDataManager.shared.saveUsername(name)
-        // feedback
         let alert = UIAlertController(title: nil, message: "Saved", preferredStyle: .alert)
         present(alert, animated: true)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             alert.dismiss(animated: true, completion: nil)
         }
-        // update name label
         nameLabel.text = name
     }
 
@@ -332,14 +334,12 @@ extension ProfileViewController: UIImagePickerControllerDelegate, UINavigationCo
             chosen = original
         }
         guard let image = chosen else { return }
-        // Optionally resize before saving to limit size
         let resized = image.scaledTo(maxDimension: 1024)
         CoreDataManager.shared.saveAvatarImage(resized)
         loadSettings()
     }
 }
 
-// Simple image resize helper
 private extension UIImage {
     func scaledTo(maxDimension: CGFloat) -> UIImage {
         let maxSide = max(size.width, size.height)

@@ -11,21 +11,11 @@ final class PushupCameraViewController: UIViewController {
     // MARK: - Public
     weak var delegate: PushupCameraDelegate?
 
-    /// Daily target (reps per day) passed from ChallengeDetailViewController
     var dailyTarget: Int?
 
     // MARK: - UI
     private let previewContainer = UIView()
     private let overlayView = OverlayView()
-
-    private let countLabel: UILabel = {
-        let l = UILabel()
-        l.font = .boldSystemFont(ofSize: 34)
-        l.textColor = .white
-        l.text = "0"
-        l.translatesAutoresizingMaskIntoConstraints = false
-        return l
-    }()
 
     private let titleLabel: UILabel = {
         let l = UILabel()
@@ -59,17 +49,9 @@ final class PushupCameraViewController: UIViewController {
         return l
     }()
 
-    private let smallProgressBar: UIView = {
-        let v = UIView()
-        v.backgroundColor = UIColor(white: 1, alpha: 0.15)
-        v.layer.cornerRadius = 2
-        v.translatesAutoresizingMaskIntoConstraints = false
-        return v
-    }()
-
     private let smallProgressFill: UIView = {
         let v = UIView()
-        v.backgroundColor = .systemGreen
+        v.backgroundColor = .app
         v.layer.cornerRadius = 2
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
@@ -77,21 +59,11 @@ final class PushupCameraViewController: UIViewController {
 
     private var smallProgressFillWidthConstraint: NSLayoutConstraint?
 
-    private let infoButton: UIButton = {
-        let b = UIButton(type: .system)
-        b.setImage(UIImage(systemName: "info"), for: .normal)
-        b.tintColor = .black
-        b.backgroundColor = .systemGreen
-        b.layer.cornerRadius = 28
-        b.translatesAutoresizingMaskIntoConstraints = false
-        return b
-    }()
-
     private let endSessionButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("END SESSION", for: .normal)
         b.setTitleColor(.white, for: .normal)
-        b.backgroundColor = .systemGreen
+        b.backgroundColor = .app
         b.layer.cornerRadius = 28
         b.titleLabel?.font = UIFont.systemFont(ofSize: 20, weight: .semibold)
         b.translatesAutoresizingMaskIntoConstraints = false
@@ -118,17 +90,14 @@ final class PushupCameraViewController: UIViewController {
     private var repCount: Int = 0 {
         didSet {
             DispatchQueue.main.async {
-                self.countLabel.text = "\(self.repCount)"
                 self.bigCountLabel.text = "\(self.repCount)"
                 self.updateCounterUI()
             }
         }
     }
 
-    // Flag to ensure congrats alert displayed only once per session
     private var didShowDailyCompleteAlert = false
 
-    // NOTE: adjusted thresholds — easier to register
     private var smoothedAngle: CGFloat = 170
     private var armWasDown = false
     private var downThreshold: CGFloat = 110
@@ -149,8 +118,6 @@ final class PushupCameraViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
-
-        // Prepare sounds early (assumes files "ding" and "succes" exist in bundle)
         SoundManager.shared.prepareSounds(dingName: "ding", successName: "succes")
 
         setupUI()
@@ -183,11 +150,7 @@ final class PushupCameraViewController: UIViewController {
         view.addSubview(titleLabel)
         view.addSubview(bigCountLabel)
         view.addSubview(fractionLabel)
-        view.addSubview(smallProgressBar)
-        smallProgressBar.addSubview(smallProgressFill)
-        view.addSubview(countLabel)
         view.addSubview(endSessionButton)
-        view.addSubview(infoButton)
         view.addSubview(cameraWarningLabel)
 
         NSLayoutConstraint.activate([
@@ -212,37 +175,20 @@ final class PushupCameraViewController: UIViewController {
             fractionLabel.leadingAnchor.constraint(equalTo: bigCountLabel.trailingAnchor, constant: 6),
             fractionLabel.bottomAnchor.constraint(equalTo: bigCountLabel.bottomAnchor, constant: -28),
 
-            smallProgressBar.topAnchor.constraint(equalTo: bigCountLabel.bottomAnchor, constant: 6),
-            smallProgressBar.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            smallProgressBar.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.5),
-            smallProgressBar.heightAnchor.constraint(equalToConstant: 4),
-
-            countLabel.topAnchor.constraint(equalTo: smallProgressBar.bottomAnchor, constant: 6),
-            countLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-
             endSessionButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -40),
             endSessionButton.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -40),
             endSessionButton.heightAnchor.constraint(equalToConstant: 64),
             endSessionButton.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.6),
-
-            infoButton.centerYAnchor.constraint(equalTo: endSessionButton.centerYAnchor),
-            infoButton.leadingAnchor.constraint(equalTo: endSessionButton.trailingAnchor, constant: 12),
-            infoButton.widthAnchor.constraint(equalToConstant: 56),
-            infoButton.heightAnchor.constraint(equalToConstant: 56),
 
             cameraWarningLabel.bottomAnchor.constraint(equalTo: endSessionButton.topAnchor, constant: -12),
             cameraWarningLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             cameraWarningLabel.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.9)
         ])
 
-        smallProgressFill.leadingAnchor.constraint(equalTo: smallProgressBar.leadingAnchor).isActive = true
-        smallProgressFill.topAnchor.constraint(equalTo: smallProgressBar.topAnchor).isActive = true
-        smallProgressFill.bottomAnchor.constraint(equalTo: smallProgressBar.bottomAnchor).isActive = true
         smallProgressFillWidthConstraint = smallProgressFill.widthAnchor.constraint(equalToConstant: 0)
         smallProgressFillWidthConstraint?.isActive = true
 
         endSessionButton.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
-        infoButton.addTarget(self, action: #selector(infoTapped), for: .touchUpInside)
 
         let dbl = UITapGestureRecognizer(target: self, action: #selector(cancelTapped))
         dbl.numberOfTapsRequired = 2
@@ -253,14 +199,7 @@ final class PushupCameraViewController: UIViewController {
         DispatchQueue.main.async {
             let total = self.dailyTarget ?? 0
             self.fractionLabel.text = "/\(total)"
-            let barW = self.smallProgressBar.bounds.width
-            let percent: CGFloat
-            if total <= 0 { percent = 0 }
-            else { percent = CGFloat(min(self.repCount, total)) / CGFloat(total) }
-            let fillW = barW * percent
-            self.smallProgressFillWidthConstraint?.constant = fillW
             UIView.animate(withDuration: 0.12) {
-                self.smallProgressBar.layoutIfNeeded()
             }
         }
     }
@@ -507,8 +446,8 @@ final class PushupCameraViewController: UIViewController {
         guard let ctx = UIGraphicsGetCurrentContext() else { UIGraphicsEndImageContext(); return nil }
 
         ctx.setLineWidth(3)
-        ctx.setStrokeColor(UIColor.systemGreen.cgColor)
-        ctx.setFillColor(UIColor.systemGreen.cgColor)
+        ctx.setStrokeColor(UIColor.app.cgColor)
+        ctx.setFillColor(UIColor.app.cgColor)
 
         func mapPointFlipped(_ p: CGPoint) -> CGPoint {
             let flipped = CGPoint(x: 1 - p.x, y: 1 - p.y)
@@ -548,7 +487,7 @@ final class PushupCameraViewController: UIViewController {
             ctx.saveGState()
             ctx.setShadow(offset: .zero, blur: 6, color: UIColor.black.withAlphaComponent(0.6).cgColor)
 
-            let fillColor = UIColor.systemGreen.withAlphaComponent(0.95).cgColor
+            let fillColor = UIColor.app.withAlphaComponent(0.95).cgColor
             ctx.setFillColor(fillColor)
             ctx.addEllipse(in: CGRect(x: v.x - radius/2, y: v.y - radius/2, width: radius, height: radius))
             ctx.drawPath(using: .fill)
@@ -567,13 +506,6 @@ final class PushupCameraViewController: UIViewController {
                 ctx.drawPath(using: .fill)
             }
         }
-
-        let text = "Reps: \(rep)"
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: UIFont.boldSystemFont(ofSize: 20),
-            .foregroundColor: UIColor.white
-        ]
-        (text as NSString).draw(at: CGPoint(x: 10, y: 10), withAttributes: attrs)
 
         let img = UIGraphicsGetImageFromCurrentImageContext()?.cgImage
         UIGraphicsEndImageContext()

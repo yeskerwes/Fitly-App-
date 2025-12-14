@@ -83,7 +83,7 @@ class MainViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        setupLayout()
+        setupConstraints()
         setupActions()
 
         _ = CoreDataManager.shared.persistentContainer
@@ -111,8 +111,8 @@ class MainViewController: UIViewController {
         NotificationCenter.default.removeObserver(self)
     }
 
-    // MARK: - Layout
-    private func setupLayout() {
+    // MARK: - Constraints
+    private func setupConstraints() {
         [welcomeLabel, usernameLabel, avatarImageView, yourBetsLabel, infoLabel, collectionView, createBetButton].forEach {
             view.addSubview($0)
         }
@@ -164,7 +164,6 @@ class MainViewController: UIViewController {
     private func setupActions() {
         createBetButton.addTarget(self, action: #selector(openCreateModal), for: .touchUpInside)
 
-        // allow tapping avatar to open profile (optional)
         let tap = UITapGestureRecognizer(target: self, action: #selector(openProfile))
         avatarImageView.isUserInteractionEnabled = true
         avatarImageView.addGestureRecognizer(tap)

@@ -6,7 +6,6 @@
 //
 
 
-// ================= VideoCell.swift =================
 import UIKit
 
 final class VideoCell: UITableViewCell {
@@ -80,10 +79,8 @@ final class VideoCell: UITableViewCell {
                         self?.thumb.image = img
                     }
                 } catch {
-                    // ignore or set placeholder
                 }
             } else {
-                // set placeholder
                 DispatchQueue.main.async { self?.thumb.image = nil }
             }
         }

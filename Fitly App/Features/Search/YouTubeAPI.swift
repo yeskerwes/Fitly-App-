@@ -1,10 +1,3 @@
-//
-//  YouTubeAPI.swift
-//  Fitly App
-//
-//  Created by Assistant-mod on behalf of user
-//
-
 import Foundation
 
 enum YouTubeError: Error {
@@ -18,12 +11,10 @@ final class YouTubeAPI {
     static let shared = YouTubeAPI()
     private init() {}
 
-    // ---- Хардкодим API key прямо в коде (замени на свой ключ) ----
     private let apiKey = "AIzaSyCi6u2j3nYKJ3t8lXB0wbAZZYcYRJnBEjY"
 
     private let base = "https://www.googleapis.com/youtube/v3"
 
-    /// Search videos by query using `search.list` endpoint
     func searchVideos(query: String, maxResults: Int = 12) async throws -> [VideoItem] {
         guard var comps = URLComponents(string: "\(base)/search") else { throw YouTubeError.badURL }
 
@@ -41,7 +32,6 @@ final class YouTubeAPI {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        // Лог для отладки: URL и факт, что ключ не пустой
         print("[YouTubeAPI] Request URL: \(url.absoluteString)")
         print("[YouTubeAPI] API key present: \(!apiKey.isEmpty)")
 
@@ -110,7 +100,6 @@ struct YTThumbnail: Codable {
     let height: Int?
 }
 
-// UI model
 struct VideoItem: Identifiable {
     let id = UUID()
     let videoId: String
@@ -119,7 +108,6 @@ struct VideoItem: Identifiable {
     let thumbnailURL: URL?
 }
 
-// YouTube API error response (частичная модель)
 private struct YouTubeAPIErrorResponse: Codable {
     struct Err: Codable {
         let code: Int
