@@ -58,7 +58,7 @@ final class ProfileViewCell: UIView {
     let nameLabel: UILabel = {
         let l = UILabel()
         l.text = "Name"
-        l.font = .boldSystemFont(ofSize: 32)
+        l.font = UIFont(name: "Poppins-Bold", size: 32)
         l.textAlignment = .center
         return l
     }()
@@ -66,7 +66,7 @@ final class ProfileViewCell: UIView {
     let nameTextField: UITextField = {
         let tf = UITextField()
         tf.placeholder = "Enter name"
-        tf.font = .systemFont(ofSize: 16)
+        tf.font = UIFont(name: "Poppins-Regular", size: 16)
         return tf
     }()
 
@@ -79,7 +79,7 @@ final class ProfileViewCell: UIView {
     let saveButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Save", for: .normal)
-        b.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        b.titleLabel?.font = UIFont(name: "Poppins-SemiBold", size: 16)
         return b
     }()
 
@@ -121,29 +121,29 @@ final class ProfileViewCell: UIView {
     // MARK: - Setup
     private func setupTexts() {
         sectionProfileTitle.text = "Profile"
-        sectionProfileTitle.font = .systemFont(ofSize: 18, weight: .semibold)
+        sectionProfileTitle.font = UIFont(name: "Poppins-SemiBold", size: 18)
         sectionProfileTitle.textColor = .systemGray
 
         sectionAppearanceTitle.text = "Appearance"
-        sectionAppearanceTitle.font = .systemFont(ofSize: 18, weight: .semibold)
+        sectionAppearanceTitle.font = UIFont(name: "Poppins-SemiBold", size: 18)
         sectionAppearanceTitle.textColor = .systemGray
 
         changeThemeLabel.text = "Change Theme"
-        changeThemeLabel.font = .systemFont(ofSize: 16)
+        changeThemeLabel.font = UIFont(name: "Poppins-Medium", size: 16)
 
         sectionNotificationsTitle.text = "Notifications"
-        sectionNotificationsTitle.font = .systemFont(ofSize: 18, weight: .semibold)
+        sectionNotificationsTitle.font = UIFont(name: "Poppins-SemiBold", size: 18)
         sectionNotificationsTitle.textColor = .systemGray
 
         notificationsLabel.text = "Enable Notifications"
-        notificationsLabel.font = .systemFont(ofSize: 16)
+        notificationsLabel.font = UIFont(name: "Poppins-Medium", size: 16)
 
         notificationsSwitch.isOn = true
         notificationsSwitch.onTintColor = UIColor(red: 0.18, green: 0.78, blue: 0.48, alpha: 1)
 
         resetButton.setTitle("Reset Settings", for: .normal)
         resetButton.setTitleColor(.systemRed, for: .normal)
-        resetButton.titleLabel?.font = .systemFont(ofSize: 18)
+        resetButton.titleLabel?.font = UIFont(name: "Poppins-Medium", size: 16)
     }
 
     private func setupConstraints() {

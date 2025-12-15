@@ -39,12 +39,12 @@ final class VideoCell: UITableViewCell {
         contentView.addSubview(thumb)
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.font = UIFont(name: "Poppins-SemiBold" , size: 16)
         titleLabel.numberOfLines = 2
         contentView.addSubview(titleLabel)
 
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        subtitleLabel.font = .systemFont(ofSize: 12)
+        subtitleLabel.font = UIFont(name: "Poppins-Medium" , size: 12)
         subtitleLabel.textColor = .secondaryLabel
         subtitleLabel.numberOfLines = 2
         contentView.addSubview(subtitleLabel)

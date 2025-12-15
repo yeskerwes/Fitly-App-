@@ -22,14 +22,14 @@ final class HistoryViewCell: UITableViewCell {
 
     private let titleLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        l.font = UIFont(name: "Poppins-SemiBold", size: 16)
         l.numberOfLines = 2
         return l
     }()
 
     private let detailLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont.systemFont(ofSize: 13, weight: .regular)
+        l.font = UIFont(name: "Poppins-Regular", size: 13)
         l.textColor = .secondaryLabel
         l.numberOfLines = 1
         return l

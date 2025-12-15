@@ -6,7 +6,7 @@ final class HistoryViewController: UIViewController {
     private let titleLabel: UILabel = {
         let l = UILabel()
         l.text = "History"
-        l.font = UIFont.systemFont(ofSize: 20, weight: .semibold)
+        l.font = UIFont(name: "Poppins-SemiBold", size: 20)
         return l
     }()
 
@@ -39,8 +39,8 @@ final class HistoryViewController: UIViewController {
         view.addSubview(tableView)
 
         titleLabel.snp.makeConstraints { make in
-            make.leading.equalTo(view.safeAreaLayoutGuide).offset(20)
-            make.top.equalTo(view.safeAreaLayoutGuide).offset(16)
+            make.leading.equalTo(view.safeAreaLayoutGuide).offset(160)
+            make.top.equalTo(view.safeAreaLayoutGuide).offset(12)
         }
 
         tableView.snp.makeConstraints { make in

@@ -100,7 +100,7 @@ final class ModalBetViewCell: UIView {
 
         titleLabel.text = "Create the bet"
         titleLabel.textAlignment = .center
-        titleLabel.font = .systemFont(ofSize: 26, weight: .semibold)
+        titleLabel.font = UIFont(name: "Poppins-SemiBold", size: 20)
         titleLabel.textColor = .white
 
         exerciseStack.axis = .horizontal
@@ -111,21 +111,21 @@ final class ModalBetViewCell: UIView {
         pushButton.setTitleColor(.white, for: .normal)
         pushButton.backgroundColor = UIColor(white: 1, alpha: 0.06)
         pushButton.layer.cornerRadius = 14
-        pushButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .medium)
+        pushButton.titleLabel?.font = UIFont(name: "Poppins-Medium", size: 18)
 
         pullButton.setTitle("Pull ups", for: .normal)
         pullButton.setTitleColor(.white, for: .normal)
         pullButton.backgroundColor = UIColor(white: 1, alpha: 0.06)
         pullButton.layer.cornerRadius = 14
-        pullButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .medium)
+        pullButton.titleLabel?.font = UIFont(name: "Poppins-Medium", size: 18)
 
         quantityLabel.text = "Quantity per day"
         quantityLabel.textColor = .white
-        quantityLabel.font = .systemFont(ofSize: 18, weight: .medium)
+        quantityLabel.font = UIFont(name: "Poppins-Medium", size: 18)
 
         durationLabel.text = "Duration (days)"
         durationLabel.textColor = .white
-        durationLabel.font = .systemFont(ofSize: 18, weight: .medium)
+        durationLabel.font = UIFont(name: "Poppins-Medium", size: 18)
         durationLabel.textAlignment = .right
 
         quantityScroll.layer.borderWidth = 2
@@ -151,15 +151,14 @@ final class ModalBetViewCell: UIView {
 
         notificationLabel.text = "Enable Notification"
         notificationLabel.textColor = UIColor(white: 0.08, alpha: 1)
-        notificationLabel.font = .systemFont(ofSize: 18)
+        notificationLabel.font = UIFont(name: "Poppins-Medium", size: 18)
 
         createButton.setTitle("Create the bet   ›››", for: .normal)
         createButton.setTitleColor(.white, for: .normal)
         createButton.backgroundColor = UIColor(white: 0.06, alpha: 1)
         createButton.layer.cornerRadius = 28
-        createButton.titleLabel?.font = .systemFont(ofSize: 20, weight: .semibold)
+        createButton.titleLabel?.font = UIFont(name: "Poppins-Medium", size: 20)
 
-        // hierarchy
         addSubview(dragIndicator)
         addSubview(titleLabel)
 
@@ -272,7 +271,7 @@ final class ModalBetViewCell: UIView {
         let b = UIButton(type: .system)
         b.setTitle(title, for: .normal)
         b.setTitleColor(UIColor(white: 0.85, alpha: 1), for: .normal)
-        b.titleLabel?.font = .systemFont(ofSize: 16)
+        b.titleLabel?.font = UIFont(name: "Poppins-Regular", size: 16)
         b.layer.cornerRadius = 18
 
         b.snp.makeConstraints {

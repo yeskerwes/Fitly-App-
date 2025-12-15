@@ -6,20 +6,6 @@ final class ChallengeDetailViewCell: UIView {
     var onStartTapped: (() -> Void)?
     var onBackTapped: (() -> Void)?
 
-    private func poppinsFont(_ style: String, size: CGFloat) -> UIFont {
-        if let f = UIFont(name: style, size: size) { return f }
-        switch style.lowercased() {
-        case let s where s.contains("bold") || s.contains("black"):
-            return UIFont.systemFont(ofSize: size, weight: .bold)
-        case let s where s.contains("semibold") || s.contains("medium"):
-            return UIFont.systemFont(ofSize: size, weight: .semibold)
-        case let s where s.contains("light"):
-            return UIFont.systemFont(ofSize: size, weight: .light)
-        default:
-            return UIFont.systemFont(ofSize: size, weight: .regular)
-        }
-    }
-
     let scrollView = UIScrollView()
     let content = UIView()
 
@@ -38,7 +24,7 @@ final class ChallengeDetailViewCell: UIView {
 
     private(set) var titleLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont(name: "Poppins-Bold", size: 30) ?? UIFont.systemFont(ofSize: 30, weight: .bold)
+        l.font = UIFont(name: "Poppins-Bold", size: 30)
         l.textColor = .white
         l.numberOfLines = 2
         return l
@@ -46,7 +32,7 @@ final class ChallengeDetailViewCell: UIView {
 
     private(set) var feeLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont(name: "Poppins-SemiBold", size: 16) ?? UIFont.systemFont(ofSize: 16, weight: .semibold)
+        l.font = UIFont(name: "Poppins-SemiBold", size: 16)
         l.textColor = .white
         return l
     }()
@@ -62,7 +48,7 @@ final class ChallengeDetailViewCell: UIView {
     private(set) var doneTodayLabel: UILabel = {
         let l = UILabel()
         l.text = "DONE TODAY"
-        l.font = UIFont(name: "Poppins-SemiBold", size: 13) ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
+        l.font = UIFont(name: "Poppins-SemiBold", size: 13)
         l.textColor = .darkGray
         return l
     }()
@@ -70,7 +56,7 @@ final class ChallengeDetailViewCell: UIView {
     private(set) var doneTodayValueLabel: UILabel = {
         let l = UILabel()
         l.text = "0 / 0"
-        l.font = UIFont(name: "Poppins-SemiBold", size: 13) ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
+        l.font = UIFont(name: "Poppins-SemiBold", size: 13)
         l.textColor = .darkGray
         return l
     }()
@@ -80,7 +66,7 @@ final class ChallengeDetailViewCell: UIView {
     private(set) var completedLabel: UILabel = {
         let l = UILabel()
         l.text = "COMPLETED DAYS"
-        l.font = UIFont(name: "Poppins-SemiBold", size: 13) ?? UIFont.systemFont(ofSize: 13, weight: .semibold)
+        l.font = UIFont(name: "Poppins-SemiBold", size: 13)
         l.textColor = .darkGray
         return l
     }()
@@ -96,11 +82,7 @@ final class ChallengeDetailViewCell: UIView {
     private(set) var startButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Start", for: .normal)
-        if let font = UIFont(name: "Poppins-SemiBold", size: 20) {
-            b.titleLabel?.font = font
-        } else {
-            b.titleLabel?.font = UIFont.systemFont(ofSize: 20, weight: .semibold)
-        }
+        b.titleLabel?.font = UIFont(name: "Poppins-SemiBold", size: 20)
         b.setTitleColor(.white, for: .normal)
         b.layer.cornerRadius = 28
         b.backgroundColor = .app
@@ -244,12 +226,12 @@ final class ChallengeDetailViewCell: UIView {
         if let dailyCard = metricsContainer.arrangedSubviews.first,
            let titleLbl = dailyCard.subviews.compactMap({ $0 as? UILabel }).first {
             titleLbl.text = "\(quantityPerDay) reps/day"
-            titleLbl.font = poppinsFont("Poppins-SemiBold", size: 18)
+            titleLbl.font = UIFont(name: "Poppins-SemiBold", size: 18)
         }
         if let durCard = metricsContainer.arrangedSubviews.last,
            let titleLbl = durCard.subviews.compactMap({ $0 as? UILabel }).first {
             titleLbl.text = "\(daysTotal) days"
-            titleLbl.font = poppinsFont("Poppins-SemiBold", size: 18)
+            titleLbl.font = UIFont(name: "Poppins-SemiBold", size: 18)
         }
 
         doneTodayValueLabel.text = "\(doneToday) / \(quantityPerDay)"
@@ -306,11 +288,11 @@ final class ChallengeDetailViewCell: UIView {
 
         let titleLabel = UILabel()
         titleLabel.text = title
-        titleLabel.font = poppinsFont("Poppins-SemiBold", size: 18)
+        titleLabel.font = UIFont(name: "Poppins-SemiBold", size: 18)
 
         let subtitleLabel = UILabel()
         subtitleLabel.text = subtitle
-        subtitleLabel.font = poppinsFont("Poppins-Regular", size: 13)
+        subtitleLabel.font = UIFont(name: "Poppins-Regular", size: 13)
         subtitleLabel.textColor = UIColor.darkGray.withAlphaComponent(0.9)
 
         card.addSubview(iconBg)

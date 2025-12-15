@@ -3,7 +3,7 @@ import SnapKit
 
 class ChallengeCell: UICollectionViewCell {
     static let reuseId = "ChallengeCell"
-
+    
     private let contentContainer: UIView = {
         let v = UIView()
         v.clipsToBounds = true
@@ -26,7 +26,7 @@ class ChallengeCell: UICollectionViewCell {
 
     private let titleLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont.systemFont(ofSize: 28, weight: .semibold)
+        l.font = UIFont(name: "Poppins-Medium", size: 24)
         l.textColor = .white
         l.numberOfLines = 2
         return l
@@ -34,14 +34,14 @@ class ChallengeCell: UICollectionViewCell {
 
     private let subtitleLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+        l.font = UIFont(name: "Poppins-Medium", size: 18)
         l.textColor = UIColor(white: 1, alpha: 0.95)
         return l
     }()
 
     private let dateLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont.systemFont(ofSize: 14)
+        l.font = UIFont(name: "Poppins-Regular", size: 14)
         l.textColor = UIColor(white: 1, alpha: 0.75)
         return l
     }()
@@ -64,9 +64,10 @@ class ChallengeCell: UICollectionViewCell {
     private let cancelButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Cancel", for: .normal)
+        b.titleLabel?.font = UIFont(name: "Poppins-Medium", size: 16)
         b.setTitleColor(.white, for: .normal)
         b.backgroundColor = UIColor.systemRed
-        b.layer.cornerRadius = 20
+        b.layer.cornerRadius = 28
         return b
     }()
 
@@ -102,16 +103,15 @@ class ChallengeCell: UICollectionViewCell {
 
         subtitleContainer.addArrangedSubview(leftBar)
         subtitleContainer.addArrangedSubview(subtitleLabel)
-
+        
         cancelButton.snp.makeConstraints { make in
-            make.top.equalToSuperview().offset(28)
-            make.bottom.equalToSuperview().inset(28)
+            make.height.equalTo(200)
             make.trailing.equalToSuperview().inset(16)
-            make.width.equalTo(120)
+            make.width.equalTo(110)
         }
 
         contentContainer.snp.makeConstraints { make in
-            make.top.bottom.equalToSuperview()
+            make.height.equalTo(200)
             containerLeadingConstraint = make.leading.equalToSuperview().offset(16).constraint
             containerTrailingConstraint = make.trailing.equalToSuperview().offset(-16).constraint
         }

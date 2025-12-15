@@ -18,7 +18,7 @@ final class MainViewController: UIViewController {
     private let welcomeLabel: UILabel = {
         let l = UILabel()
         l.text = "Welcome back,"
-        l.font = .systemFont(ofSize: 16)
+        l.font = UIFont(name: "Poppins-Regular", size: 16)
         l.textColor = .gray
         return l
     }()
@@ -26,7 +26,7 @@ final class MainViewController: UIViewController {
     private let usernameLabel: UILabel = {
         let l = UILabel()
         l.text = "there!"
-        l.font = .boldSystemFont(ofSize: 18)
+        l.font = UIFont(name: "Poppins-Bold", size: 18)
         return l
     }()
 
@@ -42,16 +42,16 @@ final class MainViewController: UIViewController {
 
     private let yourBetsLabel: UILabel = {
         let l = UILabel()
-        l.text = "Your bets"
-        l.font = .systemFont(ofSize: 14)
+        l.text = "Your challenges"
+        l.font = UIFont(name: "Poppins-Regular", size: 14)
         l.textColor = .lightGray
         return l
     }()
 
     private let infoLabel: UILabel = {
         let l = UILabel()
-        l.text = "You don’t have bet yet"
-        l.font = .systemFont(ofSize: 32, weight: .medium)
+        l.text = "You don’t have challenge yet"
+        l.font = UIFont(name: "Poppins-SemiBold", size: 36)
         l.numberOfLines = 0
         return l
     }()
@@ -72,6 +72,7 @@ final class MainViewController: UIViewController {
     private let createBetButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Create the bet", for: .normal)
+        b.titleLabel?.font = UIFont(name: "Poppins-Medium", size: 20)
         b.setTitleColor(.white, for: .normal)
         b.backgroundColor = .app
         b.layer.cornerRadius = 24

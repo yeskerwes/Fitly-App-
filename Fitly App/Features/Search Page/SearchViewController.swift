@@ -23,7 +23,7 @@ final class SearchViewController: UIViewController {
         let b = UIButton(type: .system)
         b.setTitle("Search", for: .normal)
         b.tintColor = .app
-        b.titleLabel?.font = .boldSystemFont(ofSize: 16)
+        b.titleLabel?.font = UIFont(name: "Poppins-SemiBold", size: 16)
         return b
     }()
 
@@ -52,7 +52,9 @@ final class SearchViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         title = "Search"
-
+        navigationController?.navigationBar.titleTextAttributes = [
+            .font: UIFont(name: "Poppins-SemiBold", size: 20)!
+        ]
         setupViews()
         setupConstraints()
         reloadSuggestions(filter: "")
@@ -67,7 +69,6 @@ final class SearchViewController: UIViewController {
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "suggestion")
         tableView.dataSource = self
         tableView.delegate = self
-
         view.addSubview(searchBar)
         view.addSubview(searchButton)
         view.addSubview(tableView)

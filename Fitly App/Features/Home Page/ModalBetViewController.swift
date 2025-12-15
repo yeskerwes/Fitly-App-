@@ -113,7 +113,7 @@ final class ModalBetViewController: UIViewController {
         if selected {
             button.backgroundColor = .white
             button.setTitleColor(UIColor(white: 0.06, alpha: 1), for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+            button.titleLabel?.font = UIFont(name: "Poppins-SemiBold", size: 18)
             button.layer.shadowColor = UIColor.black.cgColor
             button.layer.shadowOpacity = 0.18
             button.layer.shadowOffset = CGSize(width: 0, height: 6)
@@ -121,7 +121,7 @@ final class ModalBetViewController: UIViewController {
         } else {
             button.backgroundColor = UIColor(white: 1, alpha: 0.06)
             button.setTitleColor(.white, for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 18, weight: .medium)
+            button.titleLabel?.font = UIFont(name: "Poppins-Medium", size: 18)
             button.layer.shadowOpacity = 0
         }
     }
@@ -159,11 +159,11 @@ final class ModalBetViewController: UIViewController {
             if selected {
                 btn.backgroundColor = .white
                 btn.setTitleColor(UIColor(white: 0.06, alpha: 1), for: .normal)
-                btn.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+                btn.titleLabel?.font = UIFont(name: "Poppins-SemiBold", size: 18)
             } else {
                 btn.backgroundColor = .clear
                 btn.setTitleColor(UIColor(white: 0.85, alpha: 1), for: .normal)
-                btn.titleLabel?.font = .systemFont(ofSize: 16)
+                btn.titleLabel?.font = UIFont(name: "Poppins-Regular", size: 16)
             }
         }
 

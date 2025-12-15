@@ -19,7 +19,7 @@ final class PushupCameraViewController: UIViewController {
 
     private let titleLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+        l.font = UIFont(name: "Poppins-Bold" , size: 28)
         l.textColor = .white
         l.text = "Push Up"
         l.textAlignment = .center
@@ -29,7 +29,7 @@ final class PushupCameraViewController: UIViewController {
 
     private let bigCountLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont.boldSystemFont(ofSize: 120)
+        l.font = UIFont(name: "Poppins-SemiBold" , size: 120)
         l.textColor = .white
         l.text = "0"
         l.translatesAutoresizingMaskIntoConstraints = false
@@ -41,7 +41,7 @@ final class PushupCameraViewController: UIViewController {
 
     private let fractionLabel: UILabel = {
         let l = UILabel()
-        l.font = UIFont.systemFont(ofSize: 28, weight: .semibold)
+        l.font = UIFont(name: "Poppins-SemiBold" , size: 28)
         l.textColor = UIColor(white: 1, alpha: 0.8)
         l.text = "/0"
         l.translatesAutoresizingMaskIntoConstraints = false
@@ -65,7 +65,7 @@ final class PushupCameraViewController: UIViewController {
         b.setTitleColor(.white, for: .normal)
         b.backgroundColor = .app
         b.layer.cornerRadius = 28
-        b.titleLabel?.font = UIFont.systemFont(ofSize: 20, weight: .semibold)
+        b.titleLabel?.font = UIFont(name: "Poppins-SemiBold" , size: 20)
         b.translatesAutoresizingMaskIntoConstraints = false
         return b
     }()
@@ -74,7 +74,7 @@ final class PushupCameraViewController: UIViewController {
         let l = UILabel()
         l.text = "Camera can make mistakes.\nWe recommend checking the camera position."
         l.numberOfLines = 2
-        l.font = UIFont.systemFont(ofSize: 13)
+        l.font = UIFont(name: "Poppins-Regular" , size: 13)
         l.textColor = .white
         l.textAlignment = .center
         l.translatesAutoresizingMaskIntoConstraints = false
