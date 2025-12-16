@@ -9,10 +9,8 @@ import Foundation
 
 final class SearchViewModel {
 
-    // MARK: - Dependencies
     private let youtubeService: YouTubeServiceProtocol
 
-    // MARK: - State
     private(set) var results: [VideoItem] = []
     private(set) var suggestions: [String] = []
 
@@ -33,7 +31,6 @@ final class SearchViewModel {
         self.youtubeService = youtubeService
     }
 
-    // MARK: - Search
     func search(query: String) async throws {
         results = try await youtubeService.search(query: query, maxResults: 12)
     }

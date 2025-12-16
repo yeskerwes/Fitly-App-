@@ -14,14 +14,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene,
                willConnectTo session: UISceneSession,
                options connectionOptions: UIScene.ConnectionOptions) {
+
         guard let windowScene = (scene as? UIWindowScene) else { return }
 
         let window = UIWindow(windowScene: windowScene)
-
-        let tabBar = MainTabBarController()
-        let nav = UINavigationController(rootViewController: tabBar)
-        window.rootViewController = nav
-
+        window.rootViewController = SplashViewController()
         self.window = window
         window.makeKeyAndVisible()
     }

@@ -30,7 +30,7 @@ class MainTabBarController: UITabBarController {
         let profile = ProfileViewController()
         profile.tabBarItem = UITabBarItem(title: "Profile", image: UIImage(systemName: "person"), tag: 3)
 
-        viewControllers = [main, searchNav, history, profile]
+        viewControllers = [main, history, searchNav, profile]
     }
 
     private func setupTabBarAppearance() {

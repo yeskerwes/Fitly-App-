@@ -79,6 +79,7 @@ final class ProfileViewCell: UIView {
     let saveButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Save", for: .normal)
+        b.titleLabel?.textColor = .app
         b.titleLabel?.font = UIFont(name: "Poppins-SemiBold", size: 16)
         return b
     }()
@@ -96,11 +97,9 @@ final class ProfileViewCell: UIView {
     let resetButton = UIButton(type: .system)
     let bottomSpacer = UIView()
 
-    // MARK: - Callbacks
     var onAvatarTap: (() -> Void)?
     var onSaveTap: (() -> Void)?
 
-    // MARK: - Init
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .systemBackground

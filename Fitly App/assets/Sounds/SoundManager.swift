@@ -16,7 +16,7 @@ final class SoundManager {
     private var successPlayer: AVAudioPlayer?
 
     private func urlForSound(named name: String) -> URL? {
-        let exts = ["mp3", "wav", "m4a", "caf"]
+        let exts = ["mp3", "m4a"]
         for ext in exts {
             if let url = Bundle.main.url(forResource: name, withExtension: ext) {
                 return url
