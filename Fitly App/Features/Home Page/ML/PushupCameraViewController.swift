@@ -450,7 +450,6 @@ final class PushupCameraViewController: UIViewController {
             )
             ctx.strokePath()
 
-            // low confidence marker
             if conf < 0.2 {
                 ctx.setFillColor(
                     UIColor.systemYellow.withAlphaComponent(0.9).cgColor

@@ -20,11 +20,7 @@ final class ProfileViewCell: UIView {
     }()
 
     // MARK: - Avatar
-    let avatarContainer: UIView = {
-        let v = UIView()
-        v.backgroundColor = .clear
-        return v
-    }()
+    let avatarContainer = UIView()
 
     let avatarImageView: UIImageView = {
         let iv = UIImageView()
@@ -57,7 +53,6 @@ final class ProfileViewCell: UIView {
     // MARK: - Name
     let nameLabel: UILabel = {
         let l = UILabel()
-        l.text = "Name"
         l.font = UIFont(name: "Poppins-Bold", size: 32)
         l.textAlignment = .center
         return l
@@ -79,27 +74,24 @@ final class ProfileViewCell: UIView {
     let saveButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Save", for: .normal)
-        b.titleLabel?.textColor = .app
         b.titleLabel?.font = UIFont(name: "Poppins-SemiBold", size: 16)
         return b
     }()
 
-    // MARK: - Scroll
+    // MARK: - Sections
     let scrollView = UIScrollView()
     let contentView = UIView()
 
     let sectionProfileTitle = UILabel()
     let sectionAppearanceTitle = UILabel()
     let changeThemeLabel = UILabel()
-    let sectionNotificationsTitle = UILabel()
-    let notificationsLabel = UILabel()
-    let notificationsSwitch = UISwitch()
-    let resetButton = UIButton(type: .system)
-    let bottomSpacer = UIView()
 
+    // MARK: - Callbacks
     var onAvatarTap: (() -> Void)?
     var onSaveTap: (() -> Void)?
+    var onChangeThemeTap: (() -> Void)?
 
+    // MARK: - Init
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .systemBackground
@@ -129,20 +121,6 @@ final class ProfileViewCell: UIView {
 
         changeThemeLabel.text = "Change Theme"
         changeThemeLabel.font = UIFont(name: "Poppins-Medium", size: 16)
-
-        sectionNotificationsTitle.text = "Notifications"
-        sectionNotificationsTitle.font = UIFont(name: "Poppins-SemiBold", size: 18)
-        sectionNotificationsTitle.textColor = .systemGray
-
-        notificationsLabel.text = "Enable Notifications"
-        notificationsLabel.font = UIFont(name: "Poppins-Medium", size: 16)
-
-        notificationsSwitch.isOn = true
-        notificationsSwitch.onTintColor = UIColor(red: 0.18, green: 0.78, blue: 0.48, alpha: 1)
-
-        resetButton.setTitle("Reset Settings", for: .normal)
-        resetButton.setTitleColor(.systemRed, for: .normal)
-        resetButton.titleLabel?.font = UIFont(name: "Poppins-Medium", size: 16)
     }
 
     private func setupConstraints() {
@@ -155,23 +133,17 @@ final class ProfileViewCell: UIView {
         addSubview(scrollView)
         scrollView.addSubview(contentView)
 
-        [
-            sectionProfileTitle,
-            nameTextField,
-            nameUnderline,
-            saveButton,
-            sectionAppearanceTitle,
-            changeThemeLabel,
-            sectionNotificationsTitle,
-            notificationsLabel,
-            notificationsSwitch,
-            resetButton,
-            bottomSpacer
+        [sectionProfileTitle,
+         nameTextField,
+         nameUnderline,
+         saveButton,
+         sectionAppearanceTitle,
+         changeThemeLabel
         ].forEach { contentView.addSubview($0) }
 
         headerImageView.snp.makeConstraints {
             $0.top.leading.trailing.equalToSuperview()
-            $0.height.equalTo(180)
+            $0.height.equalTo(220)
         }
 
         avatarContainer.snp.makeConstraints {
@@ -237,32 +209,7 @@ final class ProfileViewCell: UIView {
         changeThemeLabel.snp.makeConstraints {
             $0.top.equalTo(sectionAppearanceTitle.snp.bottom).offset(16)
             $0.leading.equalToSuperview().offset(20)
-        }
-
-        sectionNotificationsTitle.snp.makeConstraints {
-            $0.top.equalTo(changeThemeLabel.snp.bottom).offset(24)
-            $0.leading.equalToSuperview().offset(20)
-        }
-
-        notificationsLabel.snp.makeConstraints {
-            $0.top.equalTo(sectionNotificationsTitle.snp.bottom).offset(16)
-            $0.leading.equalToSuperview().offset(20)
-        }
-
-        notificationsSwitch.snp.makeConstraints {
-            $0.centerY.equalTo(notificationsLabel)
-            $0.trailing.equalToSuperview().inset(20)
-        }
-
-        resetButton.snp.makeConstraints {
-            $0.top.equalTo(notificationsLabel.snp.bottom).offset(36)
-            $0.leading.equalToSuperview().offset(20)
-        }
-
-        bottomSpacer.snp.makeConstraints {
-            $0.top.equalTo(resetButton.snp.bottom)
-            $0.height.equalTo(40)
-            $0.bottom.equalToSuperview()
+            $0.bottom.equalToSuperview().offset(-40)
         }
     }
 
@@ -273,6 +220,11 @@ final class ProfileViewCell: UIView {
         )
 
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
+
+        changeThemeLabel.isUserInteractionEnabled = true
+        changeThemeLabel.addGestureRecognizer(
+            UITapGestureRecognizer(target: self, action: #selector(changeThemeTapped))
+        )
     }
 
     @objc private func avatarTapped() {
@@ -281,5 +233,9 @@ final class ProfileViewCell: UIView {
 
     @objc private func saveTapped() {
         onSaveTap?()
+    }
+
+    @objc private func changeThemeTapped() {
+        onChangeThemeTap?()
     }
 }

@@ -28,7 +28,7 @@ final class ModalBetViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        if let idx = durationOptions.firstIndex(of: 30) {
+        if let idx = durationOptions.firstIndex(of: 7) {
             selectedDurationIndex = idx
         }
 

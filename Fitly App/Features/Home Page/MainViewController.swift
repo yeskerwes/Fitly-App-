@@ -7,10 +7,8 @@ extension Notification.Name {
 
 final class MainViewController: UIViewController {
 
-    // MARK: - Architecture
     private let presenter = MainPresenter()
-
-    // MARK: - Data
+    
     private var itemsEntities: [ChallengeEntity] = []
     private var openedIndexPath: IndexPath?
 
@@ -34,8 +32,7 @@ final class MainViewController: UIViewController {
         let iv = UIImageView(image: UIImage(systemName: "person.crop.circle.fill"))
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
-        iv.layer.borderWidth = 2
-        iv.layer.borderColor = UIColor.systemBackground.cgColor
+        iv.tintColor = .app
         iv.isUserInteractionEnabled = true
         return iv
     }()
@@ -51,7 +48,7 @@ final class MainViewController: UIViewController {
     private let infoLabel: UILabel = {
         let l = UILabel()
         l.text = "You don’t have challenge yet"
-        l.font = UIFont(name: "Poppins-SemiBold", size: 36)
+        l.font = UIFont(name: "Poppins-Medium", size: 36)
         l.numberOfLines = 0
         return l
     }()
@@ -67,6 +64,15 @@ final class MainViewController: UIViewController {
         cv.delegate = self
         cv.isHidden = true
         return cv
+    }()
+    
+    private let createItButton: UIButton = {
+        let b = UIButton()
+        b.setTitle("Create It!", for: .normal)
+        b.titleLabel?.font = UIFont(name: "Poppins-SemiBold", size: 48)
+        b.setTitleColor(.app, for: .normal)
+        b.backgroundColor = .clear
+        return b
     }()
 
     private let createBetButton: UIButton = {
@@ -117,7 +123,7 @@ final class MainViewController: UIViewController {
     // MARK: - Setup
     private func setupLayout() {
         [welcomeLabel, usernameLabel, avatarImageView,
-         yourBetsLabel, infoLabel, collectionView, createBetButton]
+         yourBetsLabel, infoLabel, collectionView, createItButton, createBetButton]
             .forEach { view.addSubview($0) }
 
         welcomeLabel.snp.makeConstraints {
@@ -143,8 +149,13 @@ final class MainViewController: UIViewController {
 
         infoLabel.snp.makeConstraints {
             $0.leading.equalToSuperview().offset(20)
-            $0.top.equalTo(yourBetsLabel.snp.bottom).offset(12)
+            $0.top.equalTo(yourBetsLabel.snp.bottom).offset(20)
             $0.trailing.lessThanOrEqualToSuperview().offset(-20)
+        }
+        
+        createItButton.snp.makeConstraints {
+            $0.leading.equalToSuperview().offset(20)
+            $0.top.equalTo(infoLabel).offset(90)
         }
 
         collectionView.snp.makeConstraints {
