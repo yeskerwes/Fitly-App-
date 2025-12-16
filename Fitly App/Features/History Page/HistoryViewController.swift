@@ -39,13 +39,13 @@ final class HistoryViewController: UIViewController {
         view.addSubview(tableView)
 
         titleLabel.snp.makeConstraints { make in
-            make.leading.equalTo(view.safeAreaLayoutGuide).offset(160)
-            make.top.equalTo(view.safeAreaLayoutGuide).offset(12)
+            make.leading.equalToSuperview().offset(160)
+            make.top.equalToSuperview().offset(70)
         }
 
         tableView.snp.makeConstraints { make in
             make.leading.trailing.equalToSuperview()
-            make.top.equalTo(titleLabel.snp.bottom).offset(12)
+            make.top.equalTo(titleLabel.snp.bottom).offset(5)
             make.bottom.equalTo(view.safeAreaLayoutGuide)
         }
     }

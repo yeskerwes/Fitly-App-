@@ -121,7 +121,8 @@ final class MainViewController: UIViewController {
             .forEach { view.addSubview($0) }
 
         welcomeLabel.snp.makeConstraints {
-            $0.leading.top.equalTo(view.safeAreaLayoutGuide).offset(10)
+            $0.leading.equalToSuperview().offset(20)
+            $0.top.equalToSuperview().offset(70)
         }
 
         usernameLabel.snp.makeConstraints {

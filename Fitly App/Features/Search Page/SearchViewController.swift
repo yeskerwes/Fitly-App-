@@ -12,6 +12,13 @@ import SnapKit
 final class SearchViewController: UIViewController {
 
     // MARK: - UI
+    private let titleLabel: UILabel = {
+        let l = UILabel()
+        l.text = "Search"
+        l.font = UIFont(name: "Poppins-SemiBold", size: 20)
+        return l
+    }()
+    
     private let searchBar: UISearchBar = {
         let sb = UISearchBar()
         sb.placeholder = "Search YouTube for exercise technique"
@@ -51,10 +58,6 @@ final class SearchViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        title = "Search"
-        navigationController?.navigationBar.titleTextAttributes = [
-            .font: UIFont(name: "Poppins-SemiBold", size: 20)!
-        ]
         setupViews()
         setupConstraints()
         reloadSuggestions(filter: "")
@@ -69,15 +72,21 @@ final class SearchViewController: UIViewController {
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "suggestion")
         tableView.dataSource = self
         tableView.delegate = self
+        view.addSubview(titleLabel)
         view.addSubview(searchBar)
         view.addSubview(searchButton)
         view.addSubview(tableView)
     }
 
     private func setupConstraints() {
+        titleLabel.snp.makeConstraints { make in
+            make.leading.equalToSuperview().offset(160)
+            make.top.equalToSuperview().offset(70)
+        }
+        
         searchBar.snp.makeConstraints { make in
-            make.leading.equalTo(view.safeAreaLayoutGuide.snp.leading).offset(16)
-            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(12)
+            make.top.equalTo(titleLabel).offset(30)
+            make.leading.equalToSuperview().offset(16)
         }
 
         searchButton.snp.makeConstraints { make in
