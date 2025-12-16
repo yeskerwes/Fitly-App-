@@ -188,6 +188,7 @@ final class MainViewController: UIViewController {
     private func updateUIForState() {
         let empty = itemsEntities.isEmpty
         infoLabel.isHidden = !empty
+        createItButton.isHidden = !empty
         collectionView.isHidden = empty
     }
 
