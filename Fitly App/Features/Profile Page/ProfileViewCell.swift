@@ -8,6 +8,12 @@
 import UIKit
 import SnapKit
 
+enum AppTheme: Int {
+    case system = 0
+    case light = 1
+    case dark = 2
+}
+
 final class ProfileViewCell: UIView {
 
     // MARK: - Header
@@ -74,29 +80,54 @@ final class ProfileViewCell: UIView {
     let saveButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("Save", for: .normal)
+        b.tintColor = .app
         b.titleLabel?.font = UIFont(name: "Poppins-SemiBold", size: 16)
         return b
     }()
 
-    // MARK: - Sections
+    // MARK: - Scroll
     let scrollView = UIScrollView()
     let contentView = UIView()
 
     let sectionProfileTitle = UILabel()
     let sectionAppearanceTitle = UILabel()
-    let changeThemeLabel = UILabel()
+
+    // MARK: - Theme (3 modes)
+    let themeLabel: UILabel = {
+        let l = UILabel()
+        l.text = "Theme"
+        l.font = UIFont(name: "Poppins-Medium", size: 16)
+        return l
+    }()
+
+    let themeSegmented: UISegmentedControl = {
+        let sc = UISegmentedControl(items: ["System", "Light", "Dark"])
+        sc.selectedSegmentIndex = 0
+        sc.selectedSegmentTintColor = .app
+        sc.setTitleTextAttributes(
+            [.foregroundColor: UIColor.white],
+            for: .selected
+        )
+        sc.setTitleTextAttributes(
+            [.foregroundColor: UIColor.systemGray],
+            for: .normal
+        )
+        return sc
+    }()
+
+    let appearanceStack = UIStackView()
 
     // MARK: - Callbacks
     var onAvatarTap: (() -> Void)?
     var onSaveTap: (() -> Void)?
-    var onChangeThemeTap: (() -> Void)?
+    var onThemeChanged: ((AppTheme) -> Void)?
 
     // MARK: - Init
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .systemBackground
         setupTexts()
-        setupConstraints()
+        setupLayout()
         setupActions()
     }
 
@@ -118,12 +149,14 @@ final class ProfileViewCell: UIView {
         sectionAppearanceTitle.text = "Appearance"
         sectionAppearanceTitle.font = UIFont(name: "Poppins-SemiBold", size: 18)
         sectionAppearanceTitle.textColor = .systemGray
-
-        changeThemeLabel.text = "Change Theme"
-        changeThemeLabel.font = UIFont(name: "Poppins-Medium", size: 16)
     }
 
-    private func setupConstraints() {
+    private func setupLayout() {
+
+        appearanceStack.axis = .horizontal
+        appearanceStack.alignment = .center
+        appearanceStack.distribution = .equalSpacing
+
         addSubview(headerImageView)
         addSubview(avatarContainer)
         avatarContainer.addSubview(avatarImageView)
@@ -133,12 +166,16 @@ final class ProfileViewCell: UIView {
         addSubview(scrollView)
         scrollView.addSubview(contentView)
 
-        [sectionProfileTitle,
-         nameTextField,
-         nameUnderline,
-         saveButton,
-         sectionAppearanceTitle,
-         changeThemeLabel
+        appearanceStack.addArrangedSubview(themeLabel)
+        appearanceStack.addArrangedSubview(themeSegmented)
+
+        [
+            sectionProfileTitle,
+            nameTextField,
+            nameUnderline,
+            saveButton,
+            sectionAppearanceTitle,
+            appearanceStack
         ].forEach { contentView.addSubview($0) }
 
         headerImageView.snp.makeConstraints {
@@ -206,9 +243,9 @@ final class ProfileViewCell: UIView {
             $0.leading.equalToSuperview().offset(20)
         }
 
-        changeThemeLabel.snp.makeConstraints {
+        appearanceStack.snp.makeConstraints {
             $0.top.equalTo(sectionAppearanceTitle.snp.bottom).offset(16)
-            $0.leading.equalToSuperview().offset(20)
+            $0.leading.trailing.equalToSuperview().inset(20)
             $0.bottom.equalToSuperview().offset(-40)
         }
     }
@@ -221,9 +258,10 @@ final class ProfileViewCell: UIView {
 
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
 
-        changeThemeLabel.isUserInteractionEnabled = true
-        changeThemeLabel.addGestureRecognizer(
-            UITapGestureRecognizer(target: self, action: #selector(changeThemeTapped))
+        themeSegmented.addTarget(
+            self,
+            action: #selector(themeChanged),
+            for: .valueChanged
         )
     }
 
@@ -235,7 +273,18 @@ final class ProfileViewCell: UIView {
         onSaveTap?()
     }
 
-    @objc private func changeThemeTapped() {
-        onChangeThemeTap?()
+    @objc private func themeChanged() {
+
+        let feedback = UIImpactFeedbackGenerator(style: .medium)
+        feedback.impactOccurred()
+
+        UIView.animate(withDuration: 0.25) {
+            self.themeSegmented.layoutIfNeeded()
+        }
+
+        guard let theme = AppTheme(rawValue: themeSegmented.selectedSegmentIndex)
+        else { return }
+
+        onThemeChanged?(theme)
     }
 }

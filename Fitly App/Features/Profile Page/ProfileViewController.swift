@@ -1,13 +1,10 @@
 import UIKit
-import SnapKit
 
 final class ProfileViewController: UIViewController {
 
-    // MARK: - Properties
     private let contentView = ProfileViewCell()
     private let service = ProfileService.shared
 
-    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
@@ -17,13 +14,13 @@ final class ProfileViewController: UIViewController {
         loadSettings()
     }
 
-    // MARK: - Setup
     private func setupLayout() {
         view.addSubview(contentView)
-        contentView.snp.makeConstraints { $0.edges.equalToSuperview() }
+        contentView.frame = view.bounds
     }
 
     private func bind() {
+
         contentView.onSaveTap = { [weak self] in
             self?.saveTapped()
         }
@@ -32,29 +29,34 @@ final class ProfileViewController: UIViewController {
             self?.avatarTapped()
         }
 
-        contentView.onChangeThemeTap = { [weak self] in
-            self?.toggleTheme()
+        contentView.onThemeChanged = { [weak self] theme in
+            self?.applyTheme(theme)
         }
     }
 
-    // MARK: - Load
     private func loadSettings() {
+
         let name = service.currentUsername()
         contentView.nameLabel.text = name.isEmpty ? " " : name
         contentView.nameTextField.text = name
+
+        let savedTheme = UserDefaults.standard.integer(forKey: "appTheme")
+        let theme = AppTheme(rawValue: savedTheme) ?? .system
+        contentView.themeSegmented.selectedSegmentIndex = theme.rawValue
+        applyTheme(theme)
 
         if let image = service.currentAvatarImage() {
             contentView.avatarImageView.image = image
             contentView.avatarImageView.contentMode = .scaleAspectFill
             contentView.avatarImageView.tintColor = nil
         } else {
-            contentView.avatarImageView.image = UIImage(systemName: "person.crop.circle.fill")
+            contentView.avatarImageView.image =
+                UIImage(systemName: "person.crop.circle.fill")
             contentView.avatarImageView.tintColor = .black
             contentView.avatarImageView.contentMode = .scaleAspectFit
         }
     }
 
-    // MARK: - Save Name
     private func saveTapped() {
         let name = contentView.nameTextField.text?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -70,7 +72,6 @@ final class ProfileViewController: UIViewController {
         }
     }
 
-    // MARK: - Avatar
     private func avatarTapped() {
         let alert = UIAlertController(
             title: "Change Avatar",
@@ -88,8 +89,22 @@ final class ProfileViewController: UIViewController {
         })
 
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-
         present(alert, animated: true)
+    }
+
+    private func applyTheme(_ theme: AppTheme) {
+        guard let window = view.window else { return }
+
+        switch theme {
+        case .system:
+            window.overrideUserInterfaceStyle = .unspecified
+        case .light:
+            window.overrideUserInterfaceStyle = .light
+        case .dark:
+            window.overrideUserInterfaceStyle = .dark
+        }
+
+        UserDefaults.standard.set(theme.rawValue, forKey: "appTheme")
     }
 
     private func presentPicker() {
@@ -99,19 +114,11 @@ final class ProfileViewController: UIViewController {
         picker.delegate = self
         present(picker, animated: true)
     }
-
-    // MARK: - Theme
-    private func toggleTheme() {
-        guard let window = view.window else { return }
-
-        let isDark = window.overrideUserInterfaceStyle == .dark
-        window.overrideUserInterfaceStyle = isDark ? .light : .dark
-        UserDefaults.standard.set(!isDark, forKey: "isDarkMode")
-    }
 }
 
-// MARK: - UIImagePicker
-extension ProfileViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+extension ProfileViewController:
+    UIImagePickerControllerDelegate,
+    UINavigationControllerDelegate {
 
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         picker.dismiss(animated: true)
@@ -119,7 +126,8 @@ extension ProfileViewController: UIImagePickerControllerDelegate, UINavigationCo
 
     func imagePickerController(
         _ picker: UIImagePickerController,
-        didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]
+        didFinishPickingMediaWithInfo info:
+        [UIImagePickerController.InfoKey : Any]
     ) {
         picker.dismiss(animated: true)
 
