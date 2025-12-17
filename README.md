@@ -150,6 +150,6 @@ Additional documentation included in this repository:
 ## Contact
 
 Repository maintainer: yeskerwes
-Repository URL: [https://github.com/](https://github.com/)yeskerwes/Fitly-App-
+Repository URL: [tap here]([url](https://github.com/yeskerwes/Fitly-App-))
 
 ---
