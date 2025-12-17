@@ -103,7 +103,6 @@ Feature folders:
 * **Home Page** — active challenges overview.
 * **History Page** — completed days and progress history.
 * **Profile Page** — user preferences and app settings.
-* **Search Page** — browsing and filtering challenges.
 
 Each feature contains its own controllers and UI logic.
 
