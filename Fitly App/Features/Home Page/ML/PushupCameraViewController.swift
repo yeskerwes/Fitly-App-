@@ -379,7 +379,7 @@ final class PushupCameraViewController: UIViewController {
                 .layerPointConverted(fromCaptureDevicePoint: flipped)
         }
 
-        // MARK: - Connections (кости)
+        // MARK: - Connections 
         let connections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] = [
             (.nose, .leftEye), (.nose, .rightEye),
             (.leftEye, .leftEar), (.rightEye, .rightEar),

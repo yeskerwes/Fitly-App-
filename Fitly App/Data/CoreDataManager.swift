@@ -8,7 +8,7 @@ final class CoreDataManager {
 
     private let modelName = "Fitly"
     
-    // MARK: - Persistent container (uses .xcdatamodeld from the bundle)
+    // MARK: - Persistent container 
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: modelName)
 
@@ -62,7 +62,7 @@ final class CoreDataManager {
         }
     }
 
-    // MARK: - Challenge helpers (assumes ChallengeEntity exists in model and generated class is available)
+    // MARK: - Challenge helpers
     @discardableResult
     func createChallenge(title: String,
                          imageName: String,

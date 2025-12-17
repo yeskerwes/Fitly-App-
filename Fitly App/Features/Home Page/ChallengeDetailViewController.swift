@@ -10,8 +10,7 @@ final class ChallengeDetailViewController: UIViewController {
         v.translatesAutoresizingMaskIntoConstraints = false
         return v
     }()
-
-    // MARK: - Init
+    
     init(entity: ChallengeEntity) {
         self.entity = entity
         super.init(nibName: nil, bundle: nil)

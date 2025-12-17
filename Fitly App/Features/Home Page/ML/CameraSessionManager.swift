@@ -68,7 +68,6 @@ final class CameraSessionManager: NSObject {
 
                 self.captureSession.commitConfiguration()
                 DispatchQueue.main.async {
-                    // configure output connection after commit
                     if let vConn = self.videoOutput.connection(with: .video) {
                         if vConn.automaticallyAdjustsVideoMirroring {
                             vConn.automaticallyAdjustsVideoMirroring = false

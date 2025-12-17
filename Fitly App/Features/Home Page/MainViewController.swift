@@ -55,8 +55,6 @@ final class MainViewController: UIViewController {
 
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
-        layout.minimumLineSpacing = 28
-        layout.sectionInset = UIEdgeInsets(top: 20, left: 0, bottom: 40, right: 0)
         let cv = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.backgroundColor = .systemBackground
         cv.register(ChallengeCell.self, forCellWithReuseIdentifier: ChallengeCell.reuseId)
@@ -259,7 +257,7 @@ extension MainViewController: UICollectionViewDataSource, UICollectionViewDelega
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
-        CGSize(width: collectionView.bounds.width, height: 240)
+        CGSize(width: collectionView.bounds.width, height: 210)
     }
 }
 
